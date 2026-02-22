@@ -1,0 +1,18 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:14
+    environment:
+      POSTGRES_PASSWORD: autonewsletter
+      POSTGRES_USER: autonews
+      POSTGRES_DB: autonews
+    ports:
+      - "5432:5432"
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+  redis:
+    image: redis:6
+    ports:
+      - "6379:6379"
+volumes:
+  dbdata:
