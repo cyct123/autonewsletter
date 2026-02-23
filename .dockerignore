@@ -9,24 +9,14 @@ env/
 ENV/
 .venv
 
-# Conda
-.conda/
-*.conda
-.condarc.local
-
 # Environment & secrets
 .env
 .env.*
 !.env.example
-!environment.yml
 
 # Logs
 logs/
 *.log
-
-# Database
-*.db
-*.sqlite
 
 # Editor & system
 .DS_Store
@@ -39,11 +29,15 @@ coverage/
 .coverage
 htmlcov/
 
-# Alembic
-alembic/versions/*.pyc
+# Docker
+*.sql
+!scripts/*.sql
 
-# Distribution
-dist/
-build/
-*.egg-info/
+# Documentation
+docs/
+*.md
+!README.md
 
+# Git
+.git/
+.gitignore

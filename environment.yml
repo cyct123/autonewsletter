@@ -1,0 +1,29 @@
+name: autonewsletter
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  # Python 版本
+  - python=3.11
+
+  # 从 conda-forge 安装的包
+  - fastapi=0.109.0
+  - uvicorn=0.27.0
+  - uvicorn-standard  # uvicorn[standard] 的 conda 等价物
+  - sqlalchemy=2.0.25
+  - asyncpg=0.29.0
+  - redis-py=5.0.1
+  - hiredis  # redis[hiredis] 的 conda 等价物
+  - httpx=0.26.0
+  - feedparser=6.0.11
+  - apscheduler=3.10.4
+  - structlog=24.1.0
+  - pydantic-settings=2.1.0
+  - python-multipart=0.0.6
+  - alembic=1.13.1
+  - psycopg2=2.9.9  # For Alembic migrations (synchronous)
+
+  # 通过 pip 安装的包（conda 中不可用或版本不匹配）
+  - pip
+  - pip:
+    - openai==1.10.0

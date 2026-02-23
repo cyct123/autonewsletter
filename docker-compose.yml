@@ -1,7 +1,36 @@
 version: "3.9"
 services:
+  app:
+    build: .
+    container_name: autonewsletter-app
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://autonews:autonewsletter@db:5432/autonews
+      - REDIS_URL=redis://redis:6379
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - RSS_FEEDS=${RSS_FEEDS}
+      - PUSHPLUS_TOKENS=${PUSHPLUS_TOKENS}
+      - WECHAT_WEBHOOK_URLS=${WECHAT_WEBHOOK_URLS:-}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-465}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - WEEKLY_CRON=${WEEKLY_CRON:-0 9 * * 3}
+      - IMMEDIATE_RUN=${IMMEDIATE_RUN:-0}
+      - FORCE_RECENT=${FORCE_RECENT:-0}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+
   db:
     image: postgres:14
+    container_name: autonewsletter-db
     environment:
       POSTGRES_PASSWORD: autonewsletter
       POSTGRES_USER: autonews
@@ -10,9 +39,18 @@ services:
       - "5432:5432"
     volumes:
       - dbdata:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+
   redis:
     image: redis:6
+    container_name: autonewsletter-redis
     ports:
       - "6379:6379"
+    volumes:
+      - redisdata:/data
+    restart: unless-stopped
+
 volumes:
   dbdata:
+  redisdata:
