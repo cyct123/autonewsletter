@@ -50,8 +50,9 @@ async def run_weekly_newsletter():
                         continue
 
                     # Transcription
-                    logger.info("transcription_starting", url=item["url"])
-                    transcript_result = await transcribe(item["url"])
+                    transcribe_url = item.get("audio_url") or item["url"]
+                    logger.info("transcription_starting", url=transcribe_url)
+                    transcript_result = await transcribe(transcribe_url)
                     logger.info("transcription_result", url=item["url"], has_text=bool(transcript_result.get("text")), success=transcript_result.get("success"))
 
                     text = transcript_result.get("text") or item.get("snippet", "")
@@ -84,7 +85,7 @@ async def run_weekly_newsletter():
                         "source_id": source.get("id"),
                         "title": zh_title,
                         "original_url": item["url"],
-                        "transcript": text[:15000],
+                        "transcript": text,
                         "summary": summary_result.get("summary", ""),
                         "key_points": summary_result.get("keyPoints", []),
                         "quality_score": summary_result.get("qualityScore", 0),

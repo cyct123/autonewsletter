@@ -22,14 +22,20 @@ async def fetch_rss_items(url: str, max_items: int = 5) -> List[Dict]:
             items = []
             for idx, entry in enumerate(feed.entries[:max_items], 1):
                 snippet = entry.get("summary", "")[:500]
+                enclosures = entry.get("enclosures", [])
+                audio_url = next(
+                    (e["href"] for e in enclosures if e.get("type", "").startswith("audio")),
+                    ""
+                )
                 item = {
                     "title": entry.get("title", ""),
                     "url": entry.get("link", ""),
+                    "audio_url": audio_url,
                     "snippet": snippet,
                     "published": entry.get("published", "")
                 }
                 items.append(item)
-                logger.info("rss_item_extracted", item_num=idx, title=item["title"][:100], url=item["url"], snippet_length=len(snippet), snippet_preview=snippet[:100])
+                logger.info("rss_item_extracted", item_num=idx, title=item["title"][:100], url=item["url"], audio_url=audio_url, snippet_length=len(snippet), snippet_preview=snippet[:100])
 
             logger.info("rss_fetched", url=url, count=len(items))
             return items

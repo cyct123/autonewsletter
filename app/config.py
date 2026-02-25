@@ -27,6 +27,7 @@ class Settings(BaseSettings):
 
     # Whisper transcription
     whisper_url: str = ""
+    whisper_model: str = ""
     whisper_timeout: int = 300
 
     # Scheduling
