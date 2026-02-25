@@ -11,6 +11,7 @@ from app.modules.content import select_top
 from app.modules.subscribers import list_active
 from app.modules.distribution import distribute
 from app.repositories.content import insert_content, exists_by_url
+from app.repositories.send_log import record_send
 from app.utils.newsletter_template import build_newsletter_html
 
 
@@ -118,14 +119,18 @@ async def run_weekly_newsletter():
                 return
 
             for sub in subscribers:
-                max_items = sub["preferences"].get("maxItemsPerNewsletter", 10)
-                chosen = top_contents[:max_items]
+                prefs = sub.get("preferences", {})
+                max_items = prefs.get("maxItemsPerNewsletter", 10)
+                min_score = prefs.get("minQualityScore", 0.0)
+                chosen = select_top(top_contents, limit=max_items, min_score=min_score)
                 html = build_newsletter_html(chosen)
 
                 result = await distribute(
                     {"title": "每周Newsletter", "html": html},
                     {"channel": sub["channelType"], "address": sub["identifier"]}
                 )
+
+                await record_send(db, sub["id"], sub["channelType"], result["ok"], result.get("error"))
 
                 if result["ok"]:
                     logger.info("sent", subscriber=sub["identifier"], channel=sub["channelType"])

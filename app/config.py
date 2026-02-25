@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     smtp_port: int = 465
     smtp_user: str = ""
     smtp_pass: str = ""
+    lark_webhook_url: str = ""
+
+    # Whisper transcription
+    whisper_url: str = ""
+    whisper_timeout: int = 300
 
     # Scheduling
     weekly_cron: str = "0 9 * * 3"
