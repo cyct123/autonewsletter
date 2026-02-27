@@ -1,8 +1,8 @@
 # AutoNewsletter - Deep Dive Research Report
 
-**Date**: 2026-02-24
-**Codebase Version**: 2.0.0 (Pure Python Implementation)
-**Total Lines of Code**: ~831 lines (Python application code)
+**Date**: 2026-02-26
+**Codebase Version**: 2.1.0 (Pure Python Implementation)
+**Total Lines of Code**: ~1,033 lines (Python application code)
 
 ---
 
@@ -16,7 +16,10 @@ AutoNewsletter is a production-ready automated newsletter system built entirely 
 - Comprehensive structured logging with structlog
 - Database-driven with PostgreSQL + Redis
 - Multi-channel distribution support
-- Recently migrated from TypeScript to Python (Feb 2024)
+- Recently migrated from TypeScript to Python (Feb 2026)
+- Self-hosted Whisper transcription for podcast audio
+- Exponential backoff retry for all delivery channels
+- Delivery audit trail via SendLog
 
 ---
 
@@ -44,10 +47,10 @@ AutoNewsletter is a production-ready automated newsletter system built entirely 
 ```
 autonewsletter/
 ├── app/                          # Main application
-│   ├── models/                   # SQLAlchemy ORM models (4 models)
-│   ├── repositories/             # Data access layer (2 repos)
-│   ├── services/                 # External integrations (7 services)
-│   ├── modules/                  # Business logic (6 modules)
+│   ├── models/                   # SQLAlchemy ORM models (5 models)
+│   ├── repositories/             # Data access layer (3 repos)
+│   ├── services/                 # External integrations (8 services)
+│   ├── modules/                  # Business logic (7 modules)
 │   ├── jobs/                     # Scheduled tasks
 │   ├── utils/                    # Utilities
 │   ├── api/                      # API routes (minimal)
@@ -85,10 +88,11 @@ The newsletter generation pipeline runs on APScheduler with a configurable cron 
 - Can be bypassed with `FORCE_RECENT=1` environment variable
 - Uses PostgreSQL unique index on `original_url` column
 
-**4. Transcription** (Currently Placeholder)
+**4. Transcription**
 - Calls Whisper service for audio/video transcription
-- Currently returns empty transcript (service not configured)
-- Falls back to RSS snippet if transcription unavailable
+- Prefers `audio_url` from RSS enclosures; falls back to item URL
+- Self-hosted via `fedirz/faster-whisper-server` (NVIDIA GPU, medium model)
+- Falls back to RSS snippet if transcription unavailable or service not configured
 
 **5. AI Summarization**
 - Uses DeepSeek (preferred) or OpenAI for Chinese summarization
@@ -120,7 +124,7 @@ The newsletter generation pipeline runs on APScheduler with a configurable cron 
 
 **10. Multi-Channel Distribution**
 - Fetches active subscribers from `subscribers` table
-- For each subscriber, sends via their preferred channel
+- For each subscriber, sends via their preferred channel with exponential backoff retry (3 attempts, 2s base delay)
 - Logs delivery results to `send_logs` table
 
 ---
@@ -207,7 +211,7 @@ class SendLog(Base):
 **Implementation**:
 - Uses `httpx` for async HTTP requests (30s timeout)
 - Parses with `feedparser` library
-- Extracts: title, URL, snippet (first 500 chars), published date
+- Extracts: title, URL, audio_url (from enclosures), snippet (first 500 chars), published date
 - Returns empty list on errors
 
 ### Distribution Services
@@ -227,13 +231,22 @@ class SendLog(Base):
 - Requires SMTP_HOST, SMTP_USER, SMTP_PASS
 
 **Lark** (`app/services/lark.py`):
-- Placeholder (not implemented)
+- Sends text notifications via Lark (Feishu) webhook
+- Formats message with title and HTML content
+- Requires `LARK_WEBHOOK_URL` env var
 
 ### Whisper Service (`app/services/whisper.py`)
 
-- Placeholder for audio/video transcription
-- Currently returns empty transcript
-- Designed for future integration with Whisper API
+- Downloads audio from URL and POSTs to self-hosted faster-whisper-server
+- Multipart field: `file` (compatible with OpenAI `/v1/audio/transcriptions` API)
+- Configurable via `WHISPER_URL` and `WHISPER_TIMEOUT` (default: 300s)
+- Gracefully skips if `WHISPER_URL` not configured
+
+### Retry Utility (`app/utils/retry.py`)
+
+- `retry_async(fn, retries=3, delay=2)` — exponential backoff async retry
+- Checks `result.get("ok")` to determine success
+- Used by distribution module for all channel deliveries
 
 ---
 
@@ -276,6 +289,7 @@ class SendLog(Base):
 
 **Logic**:
 - Routes to appropriate channel service based on subscriber.channel
+- Wraps send call with `retry_async` for automatic retry on failure
 - Returns success/failure status
 
 ### Transcription Module (`app/modules/transcription.py`)
@@ -284,7 +298,7 @@ class SendLog(Base):
 
 **Logic**:
 - Wrapper for Whisper service
-- Currently returns empty transcript
+- Returns transcript text or empty string if service unavailable
 
 ---
 
@@ -304,9 +318,15 @@ class SendLog(Base):
 - `insert_content(db, content_data)` - Insert new content
 - `list_recent_contents(db, limit)` - Get recent contents
 
----
+### Send Log Repository (`app/repositories/send_log.py`)
 
-## Configuration Management
+**Function**: `record_send(db, subscriber_id, channel_type, success, error_message)`
+
+**Logic**:
+- Inserts delivery attempt record into `send_logs` table
+- Tracks: subscriber_id, channel_type, success, error_message, sent_at
+
+---
 
 ### Settings (`app/config.py`)
 
@@ -327,8 +347,13 @@ Uses `pydantic-settings` for environment variable management:
 
 **Channel Configuration**:
 - `pushplus_tokens` - Comma-separated tokens
-- `wechat_webhook_urls` - Comma-separated webhooks
+- `wechat_webhook_urls` - Comma-separated webhook URLs
+- `lark_webhook_url` - Lark/Feishu webhook URL
 - `smtp_host`, `smtp_port`, `smtp_user`, `smtp_pass` - Email config
+
+**Whisper Configuration**:
+- `whisper_url` - Self-hosted Whisper endpoint (e.g. `http://whisper:8000/v1/audio/transcriptions`)
+- `whisper_timeout` - Request timeout in seconds (default: 300)
 
 ---
 
@@ -919,7 +944,6 @@ Every operation logs:
 3. **Code Comments**: Minimal inline comments
 4. **Type Coverage**: Some functions lack return type hints
 5. **Validation**: Limited input validation in some areas
-6. **Retry Logic**: No retry mechanism for transient failures
 
 ---
 
@@ -938,10 +962,8 @@ AutoNewsletter is a well-architected, production-ready system that demonstrates 
 **Recommended Next Steps**:
 
 1. Add automated tests (pytest + pytest-asyncio)
-2. Implement Whisper transcription service
-3. Add retry mechanism for failed deliveries
-4. Create admin web UI for management
-5. Set up monitoring and alerting
-6. Implement content caching with Redis
+2. Create admin web UI for management
+3. Set up monitoring and alerting
+4. Implement content caching with Redis
 
 The system is ready for production use and can handle significant scale with proper infrastructure.
