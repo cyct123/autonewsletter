@@ -52,7 +52,7 @@ docker-compose exec db psql -U autonews -d autonews -c \
 | `app/admin/views/send_log.py` | **Create** | `SendLogAdmin` read-only |
 | `app/admin/views/system_config.py` | **Create** | `SystemConfigAdmin` edit-only + cron hot-reload |
 | `app/main.py` | Modify | Mount Admin + middlewares; update lifespan init sequence |
-| `tests/conftest.py` | **Create** | Shared pytest fixtures (in-memory SQLite engine) |
+| `tests/conftest.py` | **Create** | Shared pytest fixtures (PostgreSQL test DB) |
 | `tests/test_trigger_auth.py` | **Create** | Smoke tests for `TriggerAuthMiddleware` (written in Task 8, requires main.py) |
 | `tests/test_system_config_repo.py` | **Create** | Unit tests for `get_system_config` / `get_or_create_system_config` |
 | `tests/test_sources_module.py` | **Create** | Unit tests for `init_sources_from_env` |
@@ -69,16 +69,23 @@ docker-compose exec db psql -U autonews -d autonews -c \
 - Modify: `app/config.py`
 - Create: `tests/conftest.py`
 
-- [ ] **Step 1.1: Add sqladmin to requirements.txt**
+- [ ] **Step 1.1: Add sqladmin and test dependencies to requirements.txt**
 
   Open `requirements.txt` and add after the `alembic` line:
   ```
   sqladmin>=0.16.0
+  pytest==8.1.0
+  pytest-asyncio==0.23.5
   ```
 
-- [ ] **Step 1.2: Add sqladmin to environment.yml**
+- [ ] **Step 1.2: Add sqladmin and test dependencies to environment.yml**
 
-  Find the `pip:` or `dependencies:` section in `environment.yml` and add `sqladmin>=0.16.0`.
+  Find the `pip:` section in `environment.yml` and add under it:
+  ```yaml
+    - sqladmin>=0.16.0
+    - pytest==8.1.0
+    - pytest-asyncio==0.23.5
+  ```
 
 - [ ] **Step 1.3: Add admin vars to .env.example**
 
@@ -90,6 +97,9 @@ docker-compose exec db psql -U autonews -d autonews -c \
   ADMIN_USER=admin
   ADMIN_PASS=change_me_strong_password
   ADMIN_SESSION_SECRET=change_me_random_secret_string
+
+  # Test database (separate from production DB)
+  TEST_DATABASE_URL=postgresql+asyncpg://autonews:autonews@db/autonews_test
   ```
 
 - [ ] **Step 1.4: Add admin fields to Settings**
@@ -104,26 +114,41 @@ docker-compose exec db psql -U autonews -d autonews -c \
 
 - [ ] **Step 1.5: Create tests/conftest.py**
 
+  The project models use PostgreSQL-specific types (UUID, ARRAY, JSONB) that are not
+  supported by SQLite. Tests must run against a real PostgreSQL instance.
+  Run tests inside the app container: `docker-compose exec app pytest`
+
   ```python
   # tests/conftest.py
+  import os
   import pytest
   import pytest_asyncio
   from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
   from app.database import Base
+  from app.config import settings
 
   # Import existing models so Base.metadata includes them.
-  # SystemConfig is NOT imported here — it's imported by test_system_config_repo.py
-  # directly, which causes it to self-register with Base before the db fixture runs.
+  # SystemConfig is added to this file in Task 2 Step 2.3a (after the model is created).
   from app.models.source import Source
   from app.models.content import Content
   from app.models.subscriber import Subscriber
   from app.models.send_log import SendLog
 
-  TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
+  # Derive test DB URL: use TEST_DATABASE_URL env var if set,
+  # otherwise append "_test" to the production database name.
+  _prod_url = settings.database_url
+  TEST_DB_URL = os.environ.get(
+      "TEST_DATABASE_URL",
+      _prod_url.rsplit("/", 1)[0] + "/" + _prod_url.rsplit("/", 1)[1] + "_test",
+  )
 
 
   @pytest_asyncio.fixture
   async def db():
+      """Async DB session backed by a real PostgreSQL test database.
+      Creates all tables before each test, drops them after — no persistent state.
+      Requires TEST_DATABASE_URL to point to an existing (empty) PostgreSQL database.
+      """
       engine = create_async_engine(TEST_DB_URL, echo=False)
       async with engine.begin() as conn:
           await conn.run_sync(Base.metadata.create_all)
@@ -135,19 +160,29 @@ docker-compose exec db psql -U autonews -d autonews -c \
       await engine.dispose()
   ```
 
-- [ ] **Step 1.6: Install deps and verify config loads**
+- [ ] **Step 1.6: Create test database on the PostgreSQL server**
+
+  The test database must exist before pytest can connect. Run once:
+  ```bash
+  docker-compose exec db psql -U autonews -c "CREATE DATABASE autonews_test;"
+  ```
+  Expected: `CREATE DATABASE`
+
+  Add `TEST_DATABASE_URL` to your local `.env` file (copy the value from `.env.example`).
+
+- [ ] **Step 1.7: Install deps and verify config loads**
 
   ```bash
-  pip install sqladmin>=0.16.0 pytest-asyncio aiosqlite
+  pip install "sqladmin>=0.16.0" pytest==8.1.0 pytest-asyncio==0.23.5
   python -c "from app.config import settings; print(settings.admin_user)"
   ```
   Expected output: `admin`
 
-- [ ] **Step 1.7: Commit**
+- [ ] **Step 1.8: Checkpoint (optional — commit if pausing here)**
 
   ```bash
   git add requirements.txt environment.yml .env.example app/config.py tests/conftest.py
-  git commit -m "feat(admin): add sqladmin dep and admin config fields"
+  git commit -m "feat(admin): add sqladmin dep, admin config fields, and test infrastructure"
   ```
 
 ---
@@ -230,6 +265,16 @@ docker-compose exec db psql -U autonews -d autonews -c \
 
   Note: primary key is `Integer`, not UUID — this is a single-row config table.
 
+- [ ] **Step 2.3a: Update tests/conftest.py — add SystemConfig import**
+
+  Now that `app/models/system_config.py` exists, make the import explicit. Add one line to
+  `tests/conftest.py`, after the `SendLog` import:
+  ```python
+  from app.models.system_config import SystemConfig
+  ```
+  This ensures `SystemConfig` is registered with `Base.metadata` before `create_all` runs,
+  regardless of test file import order.
+
 - [ ] **Step 2.4: Create app/repositories/system_config.py**
 
   ```python
@@ -274,7 +319,7 @@ docker-compose exec db psql -U autonews -d autonews -c \
   ```
   Expected: all 4 tests PASS.
 
-- [ ] **Step 2.6: Commit**
+- [ ] **Step 2.6: Checkpoint (optional — commit if pausing here)**
 
   ```bash
   git add app/models/system_config.py app/repositories/system_config.py tests/test_system_config_repo.py
@@ -447,7 +492,7 @@ docker-compose exec db psql -U autonews -d autonews -c \
   ```
   Each should show the constraint.
 
-- [ ] **Step 3.10: Commit**
+- [ ] **Step 3.10: Checkpoint (optional — commit if pausing here)**
 
   ```bash
   git add app/models/ alembic/
@@ -585,7 +630,7 @@ docker-compose exec db psql -U autonews -d autonews -c \
   ```
   Expected: all 5 tests PASS.
 
-- [ ] **Step 4.5: Commit**
+- [ ] **Step 4.5: Checkpoint (optional — commit if pausing here)**
 
   ```bash
   git add app/modules/sources.py tests/test_sources_module.py
@@ -764,7 +809,7 @@ docker-compose exec db psql -U autonews -d autonews -c \
   ```
   Expected: `OK`
 
-- [ ] **Step 5.4: Commit**
+- [ ] **Step 5.4: Checkpoint (optional — commit if pausing here)**
 
   ```bash
   git add app/services/ai.py app/modules/summarization.py
@@ -853,7 +898,7 @@ Changes: `setup_scheduler` signature, read `system_config` at pipeline start, pa
   ```
   Expected: `OK`
 
-- [ ] **Step 6.6: Commit**
+- [ ] **Step 6.6: Checkpoint (optional — commit if pausing here)**
 
   ```bash
   git add app/jobs/weekly_newsletter.py
@@ -1162,7 +1207,7 @@ Changes: `setup_scheduler` signature, read `system_config` at pipeline start, pa
   ```
   Expected: `OK`
 
-- [ ] **Step 7.13: Commit**
+- [ ] **Step 7.13: Checkpoint (optional — commit if pausing here)**
 
   ```bash
   git add app/admin/ tests/test_admin_auth.py
@@ -1379,7 +1424,7 @@ This is the final integration step. The tests are written FIRST (TDD), but since
   ```
   Expected: all 3 tests PASS.
 
-- [ ] **Step 8.5: Commit**
+- [ ] **Step 8.5: Checkpoint (optional — commit if pausing here)**
 
   ```bash
   git add app/main.py tests/test_trigger_auth.py
@@ -1440,7 +1485,7 @@ This is the final integration step. The tests are written FIRST (TDD), but since
   ```
   Expected: all tests pass.
 
-- [ ] **Step 9.7: Final commit**
+- [ ] **Step 9.7: Checkpoint (optional — final commit)**
 
   ```bash
   git add .
