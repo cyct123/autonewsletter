@@ -37,6 +37,7 @@ class Settings(BaseSettings):
 
     # Logging
     log_level: str = "info"
+    log_format: str = "json"  # pretty | json
 
     class Config:
         env_file = ".env"

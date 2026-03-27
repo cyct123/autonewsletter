@@ -23,6 +23,7 @@ services:
       - IMMEDIATE_RUN=${IMMEDIATE_RUN:-0}
       - FORCE_RECENT=${FORCE_RECENT:-0}
       - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_FORMAT=${LOG_FORMAT:-json}
       - WHISPER_URL=http://whisper:8000/v1/audio/transcriptions
       - WHISPER_TIMEOUT=${WHISPER_TIMEOUT:-300}
     ports:

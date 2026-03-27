@@ -1,3 +1,4 @@
+import time
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from app.config import settings
@@ -17,7 +18,8 @@ from app.utils.newsletter_template import build_newsletter_html
 
 async def run_weekly_newsletter():
     """Execute weekly newsletter generation pipeline"""
-    logger.info("weekly_pipeline_starting")
+    pipeline_start = time.monotonic()
+    logger.info("weekly_pipeline_starting", stage="pipeline")
 
     async with AsyncSessionLocal() as db:
         try:
@@ -51,9 +53,13 @@ async def run_weekly_newsletter():
 
                     # Transcription
                     transcribe_url = item.get("audio_url") or item["url"]
-                    logger.info("transcription_starting", url=transcribe_url)
+                    t0 = time.monotonic()
+                    logger.info("transcription_starting", stage="transcription", url=transcribe_url)
                     transcript_result = await transcribe(transcribe_url)
-                    logger.info("transcription_result", url=item["url"], has_text=bool(transcript_result.get("text")), success=transcript_result.get("success"))
+                    logger.info("transcription_result", stage="transcription", url=item["url"],
+                                has_text=bool(transcript_result.get("text")),
+                                success=transcript_result.get("success"),
+                                duration_ms=int((time.monotonic() - t0) * 1000))
 
                     text = transcript_result.get("text") or item.get("snippet", "")
                     logger.info("text_after_fallback", url=item["url"], text_length=len(text), text_preview=text[:200] if text else "")
@@ -63,10 +69,14 @@ async def run_weekly_newsletter():
                         continue
 
                     # Summarization
-                    logger.info("summarization_starting", url=item["url"], text_length=len(text))
+                    t0 = time.monotonic()
+                    logger.info("summarization_starting", stage="summarization", url=item["url"], text_length=len(text))
                     try:
                         summary_result = await summarize_transcript(text)
-                        logger.info("summarization_result", url=item["url"], has_summary=bool(summary_result.get("summary")), quality_score=summary_result.get("qualityScore", 0))
+                        logger.info("summarization_result", stage="summarization", url=item["url"],
+                                    has_summary=bool(summary_result.get("summary")),
+                                    quality_score=summary_result.get("qualityScore", 0),
+                                    duration_ms=int((time.monotonic() - t0) * 1000))
                     except Exception as e:
                         logger.error("summarization_failed", url=item["url"], error=str(e), exc_info=True)
                         continue
@@ -138,7 +148,8 @@ async def run_weekly_newsletter():
                 else:
                     logger.error("send_failed", subscriber=sub["identifier"], error=result.get("error"))
 
-            logger.info("weekly_pipeline_done")
+            logger.info("weekly_pipeline_done", stage="pipeline",
+                        duration_ms=int((time.monotonic() - pipeline_start) * 1000))
 
         except Exception as e:
             logger.error("weekly_pipeline_failed", error=str(e), exc_info=True)
