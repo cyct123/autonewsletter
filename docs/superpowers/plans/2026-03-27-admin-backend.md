@@ -170,11 +170,14 @@ docker-compose exec db psql -U autonews -d autonews -c \
 
   Add `TEST_DATABASE_URL` to your local `.env` file (copy the value from `.env.example`).
 
-- [ ] **Step 1.7: Install deps and verify config loads**
+- [ ] **Step 1.7: Rebuild the app container to pick up new deps**
+
+  All tests run inside the container (`docker-compose exec app pytest`), so deps must be
+  baked in via a rebuild — a host-side `pip install` won't be visible inside the container.
 
   ```bash
-  pip install "sqladmin>=0.16.0" pytest==8.1.0 pytest-asyncio==0.23.5
-  python -c "from app.config import settings; print(settings.admin_user)"
+  docker-compose build app
+  docker-compose run --rm app python -c "from app.config import settings; print(settings.admin_user)"
   ```
   Expected output: `admin`
 
@@ -241,7 +244,7 @@ docker-compose exec db psql -U autonews -d autonews -c \
 - [ ] **Step 2.2: Run tests to confirm they fail**
 
   ```bash
-  pytest tests/test_system_config_repo.py -v
+  docker-compose exec app pytest tests/test_system_config_repo.py -v
   ```
   Expected: `ModuleNotFoundError` or `ImportError` — model and repo don't exist yet.
 
@@ -315,7 +318,7 @@ docker-compose exec db psql -U autonews -d autonews -c \
 - [ ] **Step 2.5: Run tests to confirm they pass**
 
   ```bash
-  pytest tests/test_system_config_repo.py -v
+  docker-compose exec app pytest tests/test_system_config_repo.py -v
   ```
   Expected: all 4 tests PASS.
 
@@ -429,7 +432,7 @@ docker-compose exec db psql -U autonews -d autonews -c \
 - [ ] **Step 3.6: Verify model imports are error-free**
 
   ```bash
-  python -c "from app.models.system_config import SystemConfig; from app.models.content import Content; from app.models.send_log import SendLog; print('OK')"
+  docker-compose exec app python -c "from app.models.system_config import SystemConfig; from app.models.content import Content; from app.models.send_log import SendLog; print('OK')"
   ```
   Expected: `OK`
 
@@ -573,7 +576,7 @@ docker-compose exec db psql -U autonews -d autonews -c \
 - [ ] **Step 4.2: Run tests to confirm they fail**
 
   ```bash
-  pytest tests/test_sources_module.py -v
+  docker-compose exec app pytest tests/test_sources_module.py -v
   ```
   Expected: `test_list_sources_empty_returns_empty_not_env` will PASS (fallback exists but shouldn't) or FAIL — and `init_sources_from_env` will fail with ImportError.
 
@@ -626,7 +629,7 @@ docker-compose exec db psql -U autonews -d autonews -c \
 - [ ] **Step 4.4: Run tests to confirm they pass**
 
   ```bash
-  pytest tests/test_sources_module.py -v
+  docker-compose exec app pytest tests/test_sources_module.py -v
   ```
   Expected: all 5 tests PASS.
 
@@ -805,7 +808,7 @@ docker-compose exec db psql -U autonews -d autonews -c \
 - [ ] **Step 5.3: Verify import chain is error-free**
 
   ```bash
-  python -c "from app.modules.summarization import summarize_transcript, translate_title_to_chinese; print('OK')"
+  docker-compose exec app python -c "from app.modules.summarization import summarize_transcript, translate_title_to_chinese; print('OK')"
   ```
   Expected: `OK`
 
@@ -894,7 +897,7 @@ Changes: `setup_scheduler` signature, read `system_config` at pipeline start, pa
 - [ ] **Step 6.5: Verify the file parses without error**
 
   ```bash
-  python -c "from app.jobs.weekly_newsletter import setup_scheduler, run_weekly_newsletter; print('OK')"
+  docker-compose exec app python -c "from app.jobs.weekly_newsletter import setup_scheduler, run_weekly_newsletter; print('OK')"
   ```
   Expected: `OK`
 
@@ -989,7 +992,7 @@ Changes: `setup_scheduler` signature, read `system_config` at pipeline start, pa
 - [ ] **Step 7.2: Run tests to confirm they fail**
 
   ```bash
-  pytest tests/test_admin_auth.py -v
+  docker-compose exec app pytest tests/test_admin_auth.py -v
   ```
   Expected: `ImportError` — `app.admin.auth` doesn't exist yet.
 
@@ -1030,7 +1033,7 @@ Changes: `setup_scheduler` signature, read `system_config` at pipeline start, pa
 - [ ] **Step 7.5: Run auth tests to confirm they pass**
 
   ```bash
-  pytest tests/test_admin_auth.py -v
+  docker-compose exec app pytest tests/test_admin_auth.py -v
   ```
   Expected: all 5 PASS.
 
@@ -1170,11 +1173,13 @@ Changes: `setup_scheduler` signature, read `system_config` at pipeline start, pa
       can_view_details = True
 
       async def on_model_change(self, data, model, is_created, request):
-          """Validate cron expression before saving. Raises FormValidationError on invalid input."""
+          """Validate fields before saving. Raises FormValidationError on invalid input."""
           try:
               CronTrigger.from_crontab(data["weekly_cron"])
           except Exception:
               raise FormValidationError({"weekly_cron": "cron expression is invalid"})
+          if data.get("ai_model") not in ("deepseek", "openai"):
+              raise FormValidationError({"ai_model": "must be 'deepseek' or 'openai'"})
 
       async def after_model_change(self, data, model, is_created, request):
           """Hot-reload the APScheduler job after weekly_cron is saved."""
@@ -1195,7 +1200,7 @@ Changes: `setup_scheduler` signature, read `system_config` at pipeline start, pa
 - [ ] **Step 7.12: Verify all view imports are error-free**
 
   ```bash
-  python -c "
+  docker-compose exec app python -c "
   from app.admin.auth import AdminAuth
   from app.admin.views.source import SourceAdmin
   from app.admin.views.subscriber import SubscriberAdmin
@@ -1413,14 +1418,14 @@ This is the final integration step. The tests are written FIRST (TDD), but since
 - [ ] **Step 8.3: Verify main.py imports cleanly**
 
   ```bash
-  python -c "from app.main import app; print('OK')"
+  docker-compose exec app python -c "from app.main import app; print('OK')"
   ```
   Expected: `OK` (no ImportError)
 
 - [ ] **Step 8.4: Run TriggerAuthMiddleware tests**
 
   ```bash
-  pytest tests/test_trigger_auth.py -v
+  docker-compose exec app pytest tests/test_trigger_auth.py -v
   ```
   Expected: all 3 tests PASS.
 
@@ -1481,7 +1486,7 @@ This is the final integration step. The tests are written FIRST (TDD), but since
 - [ ] **Step 9.6: Run all tests**
 
   ```bash
-  pytest tests/ -v
+  docker-compose exec app pytest tests/ -v
   ```
   Expected: all tests pass.
 
