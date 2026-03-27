@@ -123,7 +123,8 @@ from starlette.middleware.sessions import SessionMiddleware
 # ... FastAPI app 创建 ...
 
 # SessionMiddleware 必须先添加（先加的后执行，提供 session 供后续中间件使用）
-app.add_middleware(SessionMiddleware, secret_key=settings.admin_pass or "changeme-set-ADMIN_PASS")
+# secret_key 建议使用独立的 ADMIN_SESSION_SECRET（见 .env 配置），避免与登录密码耦合
+app.add_middleware(SessionMiddleware, secret_key=settings.admin_session_secret or "changeme-set-ADMIN_SESSION_SECRET")
 # TriggerAuthMiddleware 后添加（后加的先执行，在 session 初始化前鉴权 /trigger）
 app.add_middleware(TriggerAuthMiddleware)
 # 运行时执行顺序：TriggerAuthMiddleware → SessionMiddleware → 路由处理
@@ -170,12 +171,14 @@ app.add_middleware(TriggerAuthMiddleware)
 ```
 ADMIN_USER=admin
 ADMIN_PASS=your_strong_password
+ADMIN_SESSION_SECRET=your_random_secret_string
 ```
 
-`app/config.py` 新增两个字段：
+`app/config.py` 新增三个字段：
 ```python
 admin_user: str = "admin"
 admin_pass: str = ""
+admin_session_secret: str = ""
 ```
 
 ---
@@ -200,6 +203,7 @@ admin_pass: str = ""
 | PUSHPLUS_TOKENS | PushPlus Token |
 | WHISPER_URL / WHISPER_MODEL / WHISPER_TIMEOUT | Whisper 配置 |
 | ADMIN_USER / ADMIN_PASS | 管理员凭据 |
+| ADMIN_SESSION_SECRET | Session cookie 签名密钥（独立于 ADMIN_PASS，随机字符串）|
 | RSS_FEEDS | 仅初始化导入用，不再作为运行时 fallback |
 | IMMEDIATE_RUN | 启动期行为 |
 | LOG_FORMAT / LOG_LEVEL | 日志配置（导入时初始化，不支持热更新）|
@@ -369,15 +373,15 @@ def setup_scheduler(weekly_cron: str) -> AsyncIOScheduler:
 ```python
 from apscheduler.triggers.cron import CronTrigger
 from sqladmin.exceptions import FormValidationError
-from app.utils.logger import get_logger
-logger = get_logger(__name__)
+import structlog
+logger = structlog.get_logger()  # 项目中没有 get_logger 封装，直接用 structlog.get_logger()
 ```
 
 ```python
 async def after_model_change(self, data, model, is_created, request):
-    scheduler = request.app.state.scheduler
+    scheduler = getattr(request.app.state, "scheduler", None)  # 用 getattr 避免属性未挂时 AttributeError
     if scheduler is None:
-        logger.warning("scheduler_not_found", reason="app.state.scheduler is None, skipping hot-reload")
+        logger.warning("scheduler_not_found", reason="app.state.scheduler not set, skipping hot-reload")
         return
     new_cron = data["weekly_cron"]  # 使用 form data dict，避免 ORM 对象 detached 问题
     try:
@@ -503,8 +507,8 @@ async def run_weekly_newsletter():
         sources = await list_sources(db)
         for source in sources:
             max_items = source.get("max_items_per_run") if source.get("max_items_per_run") is not None else default_max
-            # 使用 is not None 而非 or，允许 per-source 设置为 0 表示"使用默认值"
-            # （实际上 0 在语义上等同于默认值；若将来需要"不抓取"语义，应使用负数或单独字段）
+            # 语义：per-source 有显式值（包括 0）则使用该值；None 表示"未设置，使用全局默认"
+            # 0 表示"本源抓取 0 条"（等同于禁用该源），不等于"使用默认值"
             ...
             summary = await summarize_transcript(transcript, db=db)
             title_zh = await translate_title_to_chinese(item["title"], db=db)
@@ -576,8 +580,8 @@ if settings.immediate_run:
 |------|------|
 | `requirements.txt` | 新增 `sqladmin>=0.16.0` |
 | `environment.yml` | 新增 `sqladmin>=0.16.0`（conda 环境依赖）|
-| `app/config.py` | 新增 `admin_user`、`admin_pass`；`weekly_cron`/`force_recent` 保留但仅供初始化用 |
-| `.env.example` | 新增 `ADMIN_USER`、`ADMIN_PASS`（检查是否已存在，避免重复）|
+| `app/config.py` | 新增 `admin_user`、`admin_pass`、`admin_session_secret` |
+| `.env.example` | 新增 `ADMIN_USER`、`ADMIN_PASS`、`ADMIN_SESSION_SECRET`（检查是否已存在，避免重复）|
 | `app/main.py` | Admin 实例构建（`Admin(app, engine, ...)`）；注册所有 View；`TriggerAuthMiddleware`；`SessionMiddleware`（顺序：SessionMiddleware → TriggerAuthMiddleware → Admin）；lifespan 初始化序列；`app.state.scheduler` |
 | `app/models/source.py` | 新增 `relationship` |
 | `app/models/content.py` | `source_id` 加 ForeignKey，新增 `relationship` |
@@ -604,12 +608,12 @@ if settings.immediate_run:
 
 ## 验证方案
 
-1. `alembic upgrade head`（必须先于应用启动）
+1. `alembic upgrade head`（必须先于应用启动，否则新表/约束缺失，后台和运行时行为不符合设计）
 2. `docker-compose build app && docker-compose up -d app`
 3. 访问 `http://localhost:8000/admin`，确认跳转到登录表单页（非 Basic Auth 弹窗）
 4. 使用 `.env` 中的 `ADMIN_USER/ADMIN_PASS` 填写登录表单，确认进入管理后台首页
 5. 在内容源管理页添加一个新 RSS 源，确认数据库有记录
 6. 在系统设置页修改 `weekly_cron` 为无效值，确认前端显示表单校验错误（非 500）
 7. 修改 `weekly_cron` 为有效值（如 `0 10 * * 3`），确认 scheduler 日志显示 job 已重新调度
-8. 执行 `curl -X POST -u admin:pass http://localhost:8000/trigger`，确认 Basic Auth 生效
+8. 执行 `curl -X POST -u admin:your_strong_password http://localhost:8000/trigger`，确认 Basic Auth 生效（替换为 .env 中的实际密码）
 9. 执行 `curl http://localhost:8000/health`，确认无需认证
