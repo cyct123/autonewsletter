@@ -18,6 +18,9 @@ async def get_or_create_system_config(db: AsyncSession) -> SystemConfig:
     """Called at startup — guarantees the id=1 row exists and returns it."""
     result = await db.execute(select(SystemConfig).where(SystemConfig.id == 1))
     config = result.scalar_one_or_none()
+    # No row exists. Create it. Safe to do without a transaction lock because
+    # this function is only called once at startup (via lifespan), before any
+    # concurrent workers are active.
     if config is None:
         config = SystemConfig(
             id=1,
