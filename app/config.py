@@ -39,6 +39,14 @@ class Settings(BaseSettings):
     log_level: str = "info"
     log_format: str = "json"  # pretty | json
 
+    # Admin
+    admin_user: str = "admin"
+    admin_pass: str = ""
+    admin_session_secret: str = ""
+
+    # Testing
+    test_database_url: str | None = None
+
     class Config:
         env_file = ".env"
 

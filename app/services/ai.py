@@ -1,29 +1,38 @@
+# app/services/ai.py
 import json
+from sqlalchemy.ext.asyncio import AsyncSession
 from openai import AsyncOpenAI
 from app.config import settings
+from app.repositories.system_config import get_system_config
 from app.utils.logger import logger
 
 
-async def summarize(text: str) -> dict:
+async def summarize(text: str, db: AsyncSession) -> dict:
     """Generate Chinese summary with key points and quality score"""
-    api_key = settings.deepseek_api_key or settings.openai_api_key
+    config = await get_system_config(db)
 
-    logger.info("summarize_called", text_length=len(text), has_deepseek_key=bool(settings.deepseek_api_key), has_openai_key=bool(settings.openai_api_key))
-
-    if not api_key:
+    if config.ai_model == "openai" and settings.openai_api_key:
+        api_key = settings.openai_api_key
+        base_url = None
+        model = "gpt-4o-mini"
+    elif settings.deepseek_api_key:
+        if config.ai_model == "openai":
+            logger.warning("ai_model_fallback", configured="openai", reason="OPENAI_API_KEY not set, using DeepSeek")
+        api_key = settings.deepseek_api_key
+        base_url = "https://api.deepseek.com"
+        model = "deepseek-chat"
+    else:
         logger.warning("no_api_key_configured", message="Neither DEEPSEEK_API_KEY nor OPENAI_API_KEY is set")
         return {
             "summary": text[:300],
             "sentences": [],
             "boldIndices": [],
             "keyPoints": [],
-            "qualityScore": 0
+            "qualityScore": 0,
         }
 
-    client = AsyncOpenAI(
-        api_key=api_key,
-        base_url="https://api.deepseek.com" if settings.deepseek_api_key else None
-    )
+    logger.info("summarize_called", text_length=len(text))
+    client = AsyncOpenAI(api_key=api_key, base_url=base_url)
 
     prompt = """你是中文资讯编辑，按以下标准生成中文内容:
 1) 用中文输出;
@@ -34,7 +43,6 @@ async def summarize(text: str) -> dict:
 结果以以下JSON格式返回: { "sentences": string[], "boldIndices": number[], "keyPoints": string[], "qualityScore": number }
 原文内容: """ + text[:6000]
 
-    model = "deepseek-chat" if settings.deepseek_api_key else "gpt-4o-mini"
     logger.info("ai_request_starting", model=model, prompt_length=len(prompt))
 
     try:
@@ -77,9 +85,8 @@ async def summarize(text: str) -> dict:
         }
 
 
-async def translate_title(title: str) -> str:
+async def translate_title(title: str, db: AsyncSession) -> str:
     """Translate English title to Chinese"""
-    # Check if translation needed (>60% ASCII)
     ascii_count = sum(1 for c in title if ord(c) < 128)
     ascii_ratio = ascii_count / max(len(title), 1)
 
@@ -89,17 +96,23 @@ async def translate_title(title: str) -> str:
         logger.info("translation_skipped", reason="already_chinese", ascii_ratio=ascii_ratio)
         return title
 
-    api_key = settings.deepseek_api_key or settings.openai_api_key
-    if not api_key:
+    config = await get_system_config(db)
+
+    if config.ai_model == "openai" and settings.openai_api_key:
+        api_key = settings.openai_api_key
+        base_url = None
+        model = "gpt-4o-mini"
+    elif settings.deepseek_api_key:
+        if config.ai_model == "openai":
+            logger.warning("ai_model_fallback", configured="openai", reason="OPENAI_API_KEY not set, using DeepSeek")
+        api_key = settings.deepseek_api_key
+        base_url = "https://api.deepseek.com"
+        model = "deepseek-chat"
+    else:
         logger.warning("translation_skipped_no_api_key")
         return title
 
-    client = AsyncOpenAI(
-        api_key=api_key,
-        base_url="https://api.deepseek.com" if settings.deepseek_api_key else None
-    )
-
-    model = "deepseek-chat" if settings.deepseek_api_key else "gpt-4o-mini"
+    client = AsyncOpenAI(api_key=api_key, base_url=base_url)
     prompt = f"将以下标题精准翻译为中文标题，保持简洁凝练: {title[:200]}"
 
     try:

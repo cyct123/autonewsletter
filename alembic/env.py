@@ -10,6 +10,7 @@ from app.models.source import Source
 from app.models.content import Content
 from app.models.subscriber import Subscriber
 from app.models.send_log import SendLog
+from app.models.system_config import SystemConfig
 
 # this is the Alembic Config object
 config = context.config

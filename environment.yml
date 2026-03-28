@@ -27,3 +27,6 @@ dependencies:
   - pip
   - pip:
     - openai==1.10.0
+    - sqladmin>=0.16.0
+    - pytest==8.1.0
+    - pytest-asyncio==0.23.5

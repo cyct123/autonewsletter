@@ -1,5 +1,7 @@
-from sqlalchemy import Column, String, Text, Float, DateTime, ARRAY
+# app/models/content.py
+from sqlalchemy import Column, String, Text, Float, DateTime, ARRAY, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 from app.database import Base
@@ -9,7 +11,7 @@ class Content(Base):
     __tablename__ = "contents"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    source_id = Column(UUID(as_uuid=True), nullable=False)
+    source_id = Column(UUID(as_uuid=True), ForeignKey("sources.id", ondelete="RESTRICT"), nullable=False)
     title = Column(Text, nullable=False)
     original_url = Column(Text, nullable=False, unique=True, index=True)
     transcript = Column(Text)
@@ -19,3 +21,5 @@ class Content(Base):
     processed_at = Column(DateTime, default=datetime.utcnow)
     status = Column(String, default="pending")
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    source = relationship("Source", back_populates="contents")

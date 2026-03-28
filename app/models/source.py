@@ -1,5 +1,6 @@
 from sqlalchemy import Column, String, Text, Integer, Boolean, DateTime
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 from app.database import Base
@@ -16,3 +17,5 @@ class Source(Base):
     max_items_per_run = Column(Integer, default=5)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    contents = relationship("Content", back_populates="source")

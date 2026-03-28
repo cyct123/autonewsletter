@@ -12,6 +12,7 @@ from app.modules.content import select_top
 from app.modules.subscribers import list_active
 from app.modules.distribution import distribute
 from app.repositories.content import insert_content, exists_by_url
+from app.repositories.system_config import get_system_config
 from app.repositories.send_log import record_send
 from app.utils.newsletter_template import build_newsletter_html
 
@@ -23,6 +24,10 @@ async def run_weekly_newsletter():
 
     async with AsyncSessionLocal() as db:
         try:
+            config = await get_system_config(db)
+            default_max = config.default_max_items_per_run
+            force_recent = config.force_recent
+
             # 1. Load sources
             sources = await list_sources(db)
             logger.info("sources_loaded", count=len(sources))
@@ -38,7 +43,7 @@ async def run_weekly_newsletter():
 
                 items = await fetch_rss_items(
                     source["url"],
-                    source.get("max_items_per_run", 5)
+                    source.get("max_items_per_run") if source.get("max_items_per_run") is not None else default_max
                 )
 
                 logger.info("rss_items_fetched", source_name=source.get("name"), item_count=len(items))
@@ -47,7 +52,7 @@ async def run_weekly_newsletter():
                     logger.info("processing_item", item_num=idx, title=item.get("title", "")[:100], url=item["url"])
 
                     # Deduplication check
-                    if not settings.force_recent and await exists_by_url(db, item["url"]):
+                    if not force_recent and await exists_by_url(db, item["url"]):
                         logger.info("content_skipped_duplicate", url=item["url"])
                         continue
 
@@ -72,7 +77,7 @@ async def run_weekly_newsletter():
                     t0 = time.monotonic()
                     logger.info("summarization_starting", stage="summarization", url=item["url"], text_length=len(text))
                     try:
-                        summary_result = await summarize_transcript(text)
+                        summary_result = await summarize_transcript(text, db=db)
                         logger.info("summarization_result", stage="summarization", url=item["url"],
                                     has_summary=bool(summary_result.get("summary")),
                                     quality_score=summary_result.get("qualityScore", 0),
@@ -84,7 +89,7 @@ async def run_weekly_newsletter():
                     # Title translation
                     logger.info("title_translation_starting", original_title=item["title"])
                     try:
-                        zh_title = await translate_title_to_chinese(item["title"])
+                        zh_title = await translate_title_to_chinese(item["title"], db=db)
                         logger.info("title_translation_result", original=item["title"], translated=zh_title)
                     except Exception as e:
                         logger.error("title_translation_failed", original_title=item["title"], error=str(e), exc_info=True)
@@ -105,13 +110,12 @@ async def run_weekly_newsletter():
                     collected.append(content)
                     logger.info("content_added_to_collection", url=item["url"], quality_score=content["quality_score"])
 
-                    # Insert into database
-                    if source.get("id"):
-                        try:
-                            await insert_content(db, content)
-                            logger.info("content_inserted_to_db", url=item["url"])
-                        except Exception as e:
-                            logger.error("content_insert_failed", url=item["url"], error=str(e), exc_info=True)
+                    # Insert into database — keep try/except: FK violation possible if source deleted mid-run
+                    try:
+                        await insert_content(db, content)
+                        logger.info("content_inserted_to_db", url=item["url"])
+                    except Exception as e:
+                        logger.error("content_insert_failed", url=item["url"], error=str(e), exc_info=True)
 
             logger.info("content_collected", total=len(collected))
 
@@ -156,18 +160,18 @@ async def run_weekly_newsletter():
             raise
 
 
-def setup_scheduler():
-    """Configure APScheduler for weekly newsletter"""
+def setup_scheduler(weekly_cron: str) -> AsyncIOScheduler:
+    """Configure APScheduler for weekly newsletter.
+    weekly_cron is read from system_config at startup — not from settings directly.
+    """
     scheduler = AsyncIOScheduler()
-
-    # Add weekly newsletter job
-    trigger = CronTrigger.from_crontab(settings.weekly_cron)
+    trigger = CronTrigger.from_crontab(weekly_cron)
     scheduler.add_job(
         run_weekly_newsletter,
         trigger,
         id="weekly_newsletter",
-        name="Weekly Newsletter Generation"
+        name="Weekly Newsletter Generation",
+        misfire_grace_time=3600,
     )
-
-    logger.info("scheduler_configured", cron=settings.weekly_cron)
+    logger.info("scheduler_configured", cron=weekly_cron)
     return scheduler
