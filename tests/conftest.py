@@ -12,6 +12,7 @@ from app.models.source import Source
 from app.models.content import Content
 from app.models.subscriber import Subscriber
 from app.models.send_log import SendLog
+from app.models.system_config import SystemConfig
 
 # Derive test DB URL: use TEST_DATABASE_URL env var if set,
 # otherwise append "_test" to the production database name.
