@@ -24,6 +24,9 @@ services:
       - FORCE_RECENT=${FORCE_RECENT:-0}
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - LOG_FORMAT=${LOG_FORMAT:-json}
+      - ADMIN_USER=${ADMIN_USER:-admin}
+      - ADMIN_PASS=${ADMIN_PASS:-}
+      - ADMIN_SESSION_SECRET=${ADMIN_SESSION_SECRET:-}
       - WHISPER_URL=http://whisper:8000/v1/audio/transcriptions
       - WHISPER_TIMEOUT=${WHISPER_TIMEOUT:-300}
     ports:
