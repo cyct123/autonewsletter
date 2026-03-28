@@ -1,39 +1,40 @@
+# app/modules/sources.py
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.repositories.source import list_sources as repo_list_sources
+from sqlalchemy import select, func
+from app.repositories.source import list_sources as repo_list_sources, create_source
+from app.models.source import Source
 from app.config import settings
 from typing import List
 
 
 async def list_sources(db: AsyncSession) -> List[dict]:
-    """Get active sources from DB or fallback to RSS_FEEDS env var"""
+    """Get active sources from DB. Returns empty list if no sources configured.
+    RSS_FEEDS env var is only used at startup for initial import (see init_sources_from_env).
+    """
     sources = await repo_list_sources(db)
+    return [
+        {
+            "id": str(source.id),
+            "name": source.name,
+            "url": source.url,
+            "type": source.type,
+            "active": source.active,
+            "max_items_per_run": source.max_items_per_run,
+        }
+        for source in sources
+    ]
 
-    if sources:
-        return [
-            {
-                "id": str(source.id),
-                "name": source.name,
-                "url": source.url,
-                "type": source.type,
-                "active": source.active,
-                "max_items_per_run": source.max_items_per_run
-            }
-            for source in sources
-        ]
 
-    # Fallback to RSS_FEEDS env var
-    if settings.rss_feeds:
-        feeds = [f.strip() for f in settings.rss_feeds.split(",") if f.strip()]
-        return [
-            {
-                "id": None,
-                "name": f"RSS Feed {i+1}",
-                "url": url,
-                "type": "rss",
-                "active": True,
-                "max_items_per_run": 5
-            }
-            for i, url in enumerate(feeds)
-        ]
-
-    return []
+async def init_sources_from_env(db: AsyncSession) -> None:
+    """One-time import: populate sources table from RSS_FEEDS env var if table is empty.
+    Called once at application startup before scheduler starts.
+    """
+    if not settings.rss_feeds:
+        return
+    count = await db.scalar(select(func.count()).select_from(Source))
+    if count > 0:
+        return
+    for url in settings.rss_feeds.split(","):
+        url = url.strip()
+        if url:
+            await create_source(db, name=url, url=url)
