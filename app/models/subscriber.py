@@ -1,5 +1,6 @@
 from sqlalchemy import Column, String, Text, Boolean, DateTime
 from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 from app.database import Base
@@ -15,3 +16,5 @@ class Subscriber(Base):
     preferences = Column(JSONB, default={})
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    send_logs = relationship("SendLog", back_populates="subscriber")
