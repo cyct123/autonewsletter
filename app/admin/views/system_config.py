@@ -36,7 +36,11 @@ class SystemConfigAdmin(ModelView, model=SystemConfig):
 
     async def after_model_change(self, data, model, is_created, request):
         """Hot-reload the APScheduler job after weekly_cron is saved."""
-        scheduler = getattr(request.app.state, "scheduler", None)
+        # sqladmin mounts self.admin (inner Starlette app) at /admin, so request.app
+        # is the inner app. Access the outer FastAPI app via _admin_ref.app.
+        outer_app = getattr(self.__class__, "_admin_ref", None)
+        outer_app = outer_app.app if outer_app is not None else request.app
+        scheduler = getattr(outer_app.state, "scheduler", None)
         if scheduler is None:
             logger.warning("scheduler_not_found",
                            reason="app.state.scheduler not set, skipping hot-reload")
