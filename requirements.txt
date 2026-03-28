@@ -11,4 +11,7 @@ structlog==24.1.0
 pydantic-settings==2.1.0
 python-multipart==0.0.6
 alembic==1.13.1
+sqladmin>=0.16.0
+pytest==8.1.0
+pytest-asyncio==0.23.5
 psycopg2-binary==2.9.9
