@@ -1,5 +1,5 @@
 # tests/conftest.py
-import os
+import urllib.parse
 import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
@@ -16,9 +16,11 @@ from app.models.send_log import SendLog
 # Derive test DB URL: use TEST_DATABASE_URL env var if set,
 # otherwise append "_test" to the production database name.
 _prod_url = settings.database_url
-TEST_DB_URL = os.environ.get(
-    "TEST_DATABASE_URL",
-    _prod_url.rsplit("/", 1)[0] + "/" + _prod_url.rsplit("/", 1)[1] + "_test",
+_parsed = urllib.parse.urlsplit(_prod_url)
+_test_path = _parsed.path.rstrip("/") + "_test"
+_test_parsed = _parsed._replace(path=_test_path)
+TEST_DB_URL = settings.test_database_url or (
+    urllib.parse.urlunsplit(_test_parsed)
 )
 
 
@@ -32,8 +34,10 @@ async def db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-    async with session_factory() as session:
-        yield session
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-    await engine.dispose()
+    try:
+        async with session_factory() as session:
+            yield session
+    finally:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
+        await engine.dispose()

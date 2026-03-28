@@ -44,9 +44,11 @@ class Settings(BaseSettings):
     admin_pass: str = ""
     admin_session_secret: str = ""
 
+    # Testing
+    test_database_url: str | None = None
+
     class Config:
         env_file = ".env"
-        extra = "ignore"
 
 
 settings = Settings()
