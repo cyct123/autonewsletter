@@ -8,6 +8,8 @@
 
 **Tech Stack:** sqladmin 0.23.0 `BaseView`/`@expose`, FastAPI `app.state`, `asyncio.create_task`, Starlette `TestClient`, pytest
 
+**Prerequisite:** This plan was validated against sqladmin 0.23.0 (`BaseView` route-name registration behaviour). `requirements.txt` currently has `sqladmin>=0.16.0`. Before starting, confirm the installed version: `docker exec autonewsletter-app python -c "import importlib.metadata; print(importlib.metadata.version('sqladmin'))"` — must print `0.23.x`. If a different version is installed, pin `sqladmin==0.23.0` in `requirements.txt` and rebuild first.
+
 ---
 
 ## File Map
@@ -52,7 +54,7 @@ def _login(client: TestClient) -> None:
 def test_trigger_page_requires_login():
     client = TestClient(app, raise_server_exceptions=False, follow_redirects=True)
     response = client.get("/admin/trigger")
-    assert "/admin/login" in response.url
+    assert "/admin/login" in str(response.url)
 
 
 def test_trigger_post_fires_task():
@@ -96,6 +98,7 @@ def test_trigger_post_already_running():
 - [ ] **Step 1.2: Copy to container and run — verify all 3 tests fail**
 
 ```bash
+docker exec autonewsletter-app mkdir -p /app/tests
 docker cp tests/test_trigger_admin.py autonewsletter-app:/app/tests/test_trigger_admin.py
 docker exec -w /app autonewsletter-app python -m pytest tests/test_trigger_admin.py -v
 ```
@@ -149,7 +152,7 @@ class TriggerAdmin(BaseView):
                 logger.warning("trigger_running_not_set")
                 request.session["flash"] = "Trigger unavailable — check logs."
                 return RedirectResponse(
-                    url=request.url_for("admin:triggeradmin.trigger_page"),
+                    url=request.url_for("admin:trigger_page"),
                     status_code=303,
                 )
 
@@ -163,7 +166,7 @@ class TriggerAdmin(BaseView):
                 request.session["flash"] = "Newsletter generation started."
 
             return RedirectResponse(
-                url=request.url_for("admin:triggeradmin.trigger_page"),
+                url=request.url_for("admin:trigger_page"),
                 status_code=303,
             )
 
@@ -286,6 +289,21 @@ tests/test_trigger_admin.py::test_trigger_post_already_running PASSED
 ```
 
 - [ ] **Step 2.7: Run full test suite — verify no regressions**
+
+First ensure all test files and pytest.ini are present in the container (they may already be there from prior sessions — run anyway to be safe):
+
+```bash
+docker exec autonewsletter-app mkdir -p /app/tests
+docker cp pytest.ini autonewsletter-app:/app/pytest.ini
+docker cp tests/conftest.py autonewsletter-app:/app/tests/conftest.py
+docker cp tests/test_admin_auth.py autonewsletter-app:/app/tests/test_admin_auth.py
+docker cp tests/test_sources_module.py autonewsletter-app:/app/tests/test_sources_module.py
+docker cp tests/test_system_config_repo.py autonewsletter-app:/app/tests/test_system_config_repo.py
+docker cp tests/test_trigger_auth.py autonewsletter-app:/app/tests/test_trigger_auth.py
+docker cp tests/test_trigger_admin.py autonewsletter-app:/app/tests/test_trigger_admin.py
+```
+
+Then run:
 
 ```bash
 docker exec -w /app autonewsletter-app python -m pytest tests/ -v
