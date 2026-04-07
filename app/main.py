@@ -20,6 +20,7 @@ from app.admin.views.subscriber import SubscriberAdmin
 from app.admin.views.content import ContentAdmin
 from app.admin.views.send_log import SendLogAdmin
 from app.admin.views.system_config import SystemConfigAdmin
+from app.admin.views.trigger import TriggerAdmin
 
 
 class TriggerAuthMiddleware(BaseHTTPMiddleware):
@@ -63,6 +64,7 @@ async def lifespan(app: FastAPI):
 
     scheduler = setup_scheduler(weekly_cron=config.weekly_cron)
     app.state.scheduler = scheduler
+    app.state.trigger_running = False
     scheduler.start()
 
     if settings.immediate_run:
@@ -97,12 +99,14 @@ app.add_middleware(TriggerAuthMiddleware)
 authentication_backend = AdminAuth(
     secret_key=settings.admin_session_secret or "changeme-set-ADMIN_SESSION_SECRET"
 )
-admin = Admin(app, engine, authentication_backend=authentication_backend)
+admin = Admin(app, engine, authentication_backend=authentication_backend,
+              templates_dir="app/admin/templates")
 admin.add_view(SourceAdmin)
 admin.add_view(SubscriberAdmin)
 admin.add_view(ContentAdmin)
 admin.add_view(SendLogAdmin)
 admin.add_view(SystemConfigAdmin)
+admin.add_view(TriggerAdmin)
 
 
 @app.get("/health")

@@ -1,0 +1,39 @@
+{% extends "sqladmin/layout.html" %}
+
+{% block content_header %}
+<div class="container-xl">
+  <div class="page-header">
+    <div class="row align-items-center">
+      <div class="col-auto">
+        <h2 class="page-title">
+          Trigger Newsletter
+        </h2>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-xl">
+  <div class="row row-cards">
+    <div class="col-12 col-md-6">
+      <div class="card">
+        <div class="card-body">
+          {% if flash %}
+          <div class="alert {% if 'started' in flash %}alert-success{% else %}alert-warning{% endif %} mb-3" role="alert">
+            {{ flash }}
+          </div>
+          {% endif %}
+          <p class="text-muted mb-4">This will send the newsletter to all active subscribers immediately.</p>
+          <form method="POST">
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-paper-plane me-2"></i>Run Newsletter Now
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
