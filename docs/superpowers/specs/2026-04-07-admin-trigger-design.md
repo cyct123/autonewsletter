@@ -84,8 +84,8 @@ The `except` block ensures unobserved-task exceptions are logged rather than sil
 Three tests in `tests/test_trigger_admin.py`:
 
 - `test_trigger_page_requires_login` — unauthenticated GET `/admin/trigger` follows the redirect and asserts the final URL contains `/admin/login`. Uses `TestClient(app, raise_server_exceptions=False)`.
-- `test_trigger_post_fires_task` — logs in via POST `/admin/login` (with `admin_pass` patched) to obtain a real signed session cookie, then POST `/admin/trigger`. Mocks `run_weekly_newsletter`. Asserts 303 redirect and `session["flash"] = "Newsletter generation started."`.
-- `test_trigger_post_already_running` — same login flow, sets `app.state.trigger_running = True` before POSTing. Asserts 303 redirect and `session["flash"] = "Already running — please wait."`.
+- `test_trigger_post_fires_task` — logs in via POST `/admin/login` (with `admin_pass` patched) to obtain a real signed session cookie, then POST `/admin/trigger`. Mocks `run_weekly_newsletter`. Asserts 303 redirect; follows redirect to GET `/admin/trigger` and asserts the flash banner text "Newsletter generation started." appears in the response body.
+- `test_trigger_post_already_running` — same login flow, sets `app.state.trigger_running = True` before POSTing. Asserts 303 redirect; follows redirect and asserts flash banner text "Already running — please wait." appears in the response body.
 
 ## Files Changed
 
