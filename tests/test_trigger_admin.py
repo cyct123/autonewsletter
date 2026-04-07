@@ -25,7 +25,7 @@ def test_trigger_page_requires_login():
 
 def test_trigger_post_fires_task():
     with patch("app.admin.auth.settings") as mock_settings, \
-         patch("app.admin.views.trigger.run_weekly_newsletter", new_callable=AsyncMock):
+         patch("app.admin.views.trigger.run_weekly_newsletter", new_callable=AsyncMock) as mock_run:
         mock_settings.admin_user = "admin"
         mock_settings.admin_pass = "testpass"
         client = TestClient(app, raise_server_exceptions=False)
@@ -41,6 +41,7 @@ def test_trigger_post_fires_task():
         response = client.post("/admin/trigger", follow_redirects=True)
         assert response.status_code == 200
         assert "Newsletter generation started." in response.text
+        mock_run.assert_called_once()
 
 
 def test_trigger_post_already_running():

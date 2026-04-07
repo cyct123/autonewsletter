@@ -40,7 +40,10 @@ class TriggerAdmin(BaseView):
                 request.session["flash"] = "Already running — please wait."
             else:
                 outer_app.state.trigger_running = True
-                asyncio.create_task(
+                # Store task reference on app.state to prevent GC before completion.
+                # Note: trigger_running is process-local; multi-worker deployments do
+                # not share this flag across workers (acceptable for admin convenience).
+                outer_app.state.trigger_task = asyncio.create_task(
                     _run_and_clear(run_weekly_newsletter, outer_app.state)
                 )
                 request.session["flash"] = "Newsletter generation started."
