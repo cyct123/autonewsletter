@@ -41,8 +41,8 @@ class TriggerAdmin(BaseView):
             else:
                 outer_app.state.trigger_running = True
                 # Store task reference on app.state to prevent GC before completion.
-                # Note: trigger_running is process-local; multi-worker deployments do
-                # not share this flag across workers (acceptable for admin convenience).
+                # trigger_running is process-local and only prevents duplicate
+                # /admin/trigger clicks within this worker process.
                 outer_app.state.trigger_task = asyncio.create_task(
                     _run_and_clear(run_weekly_newsletter, outer_app.state)
                 )

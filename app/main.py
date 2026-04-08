@@ -1,6 +1,7 @@
 # app/main.py
 import base64
 from contextlib import asynccontextmanager
+from pathlib import Path
 from fastapi import FastAPI
 from sqladmin import Admin
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -100,7 +101,7 @@ authentication_backend = AdminAuth(
     secret_key=settings.admin_session_secret or "changeme-set-ADMIN_SESSION_SECRET"
 )
 admin = Admin(app, engine, authentication_backend=authentication_backend,
-              templates_dir="app/admin/templates")
+              templates_dir=str(Path(__file__).resolve().parent / "admin" / "templates"))
 admin.add_view(SourceAdmin)
 admin.add_view(SubscriberAdmin)
 admin.add_view(ContentAdmin)
