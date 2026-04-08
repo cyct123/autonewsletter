@@ -33,6 +33,16 @@
             <span class="badge bg-success">Idle</span>
             {% endif %}
           </div>
+          {% if last_run_at %}
+          <div class="mb-3 small text-muted">
+            Last run: {{ last_run_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}
+            {% if last_run_error %}
+            — <span class="text-danger">{{ last_run_error }}</span>
+            {% else %}
+            — <span class="text-success">completed successfully</span>
+            {% endif %}
+          </div>
+          {% endif %}
           <p class="text-muted mb-4">This will send the newsletter to all active subscribers immediately.</p>
           <form method="POST">
             <button type="submit" class="btn btn-primary" {% if trigger_running %}disabled{% endif %}>
@@ -44,4 +54,7 @@
     </div>
   </div>
 </div>
+{% if trigger_running %}
+<script>setTimeout(function(){ location.reload(); }, 5000);</script>
+{% endif %}
 {% endblock %}

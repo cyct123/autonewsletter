@@ -66,6 +66,8 @@ async def lifespan(app: FastAPI):
     scheduler = setup_scheduler(weekly_cron=config.weekly_cron)
     app.state.scheduler = scheduler
     app.state.trigger_running = False
+    app.state.last_run_at = None
+    app.state.last_run_error = None
     scheduler.start()
 
     if settings.immediate_run:

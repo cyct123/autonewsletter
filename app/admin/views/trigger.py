@@ -1,5 +1,6 @@
 # app/admin/views/trigger.py
 import asyncio
+import datetime
 import structlog
 from sqladmin import BaseView, expose
 from starlette.responses import RedirectResponse
@@ -10,16 +11,20 @@ logger = structlog.get_logger()
 
 async def _run_and_clear(fn, app_state):
     """Run fn() and always reset trigger_running, even on failure."""
+    error_msg = None
     try:
         await fn()
     except asyncio.CancelledError:
         logger.warning("trigger_task_cancelled")
         raise
-    except Exception:
+    except Exception as e:
         logger.error("trigger_task_failed", exc_info=True)
+        error_msg = str(e)
     finally:
         app_state.trigger_running = False
         app_state.trigger_task = None
+        app_state.last_run_at = datetime.datetime.now(datetime.timezone.utc)
+        app_state.last_run_error = error_msg
 
 
 class TriggerAdmin(BaseView):
@@ -61,8 +66,15 @@ class TriggerAdmin(BaseView):
         outer_app = self.__class__._admin_ref.app
         flash = request.session.pop("flash", None)
         trigger_running = getattr(outer_app.state, "trigger_running", False)
+        last_run_at = getattr(outer_app.state, "last_run_at", None)
+        last_run_error = getattr(outer_app.state, "last_run_error", None)
         return await self.templates.TemplateResponse(
             request,
             "sqladmin/trigger.html",
-            {"flash": flash, "trigger_running": trigger_running},
+            {
+                "flash": flash,
+                "trigger_running": trigger_running,
+                "last_run_at": last_run_at,
+                "last_run_error": last_run_error,
+            },
         )
