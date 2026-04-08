@@ -1,21 +1,8 @@
 # tests/test_trigger_admin.py
 import asyncio
-import pytest
 from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
 from app.main import app
-
-
-def _login(client: TestClient) -> None:
-    """POST to /admin/login with default test credentials. Client stores the session cookie."""
-    with patch("app.admin.auth.settings") as mock_settings:
-        mock_settings.admin_user = "admin"
-        mock_settings.admin_pass = "testpass"
-        client.post(
-            "/admin/login",
-            data={"username": "admin", "password": "testpass"},
-            follow_redirects=False,
-        )
 
 
 def test_trigger_page_requires_login():
