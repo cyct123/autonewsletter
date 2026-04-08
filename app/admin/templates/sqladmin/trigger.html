@@ -25,9 +25,17 @@
             {{ flash }}
           </div>
           {% endif %}
+          <div class="mb-3">
+            <span class="text-muted">Status: </span>
+            {% if trigger_running %}
+            <span class="badge bg-warning text-dark">Running</span>
+            {% else %}
+            <span class="badge bg-success">Idle</span>
+            {% endif %}
+          </div>
           <p class="text-muted mb-4">This will send the newsletter to all active subscribers immediately.</p>
           <form method="POST">
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="btn btn-primary" {% if trigger_running %}disabled{% endif %}>
               <i class="fa-solid fa-paper-plane me-2"></i>Run Newsletter Now
             </button>
           </form>

@@ -40,6 +40,7 @@ def test_trigger_post_fires_task():
         assert len(scheduled) == 1
         asyncio.run(scheduled.pop())
         mock_run.assert_called_once()
+        assert app.state.trigger_running is False
 
 
 def test_trigger_post_already_running():

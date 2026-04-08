@@ -58,9 +58,11 @@ class TriggerAdmin(BaseView):
             )
 
         # GET
+        outer_app = self.__class__._admin_ref.app
         flash = request.session.pop("flash", None)
+        trigger_running = getattr(outer_app.state, "trigger_running", False)
         return await self.templates.TemplateResponse(
             request,
             "sqladmin/trigger.html",
-            {"flash": flash},
+            {"flash": flash, "trigger_running": trigger_running},
         )
