@@ -12,10 +12,14 @@ async def _run_and_clear(fn, app_state):
     """Run fn() and always reset trigger_running, even on failure."""
     try:
         await fn()
+    except asyncio.CancelledError:
+        logger.warning("trigger_task_cancelled")
+        raise
     except Exception:
         logger.error("trigger_task_failed", exc_info=True)
     finally:
         app_state.trigger_running = False
+        app_state.trigger_task = None
 
 
 class TriggerAdmin(BaseView):
