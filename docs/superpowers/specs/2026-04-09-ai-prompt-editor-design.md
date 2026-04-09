@@ -114,8 +114,8 @@ async def ai_prompts_page(self, request): ...
 
 1. Open `AsyncSessionLocal()`, call `get_system_config(db)`.
 2. Pass to template:
-   - `summarize_value`: `config.summarize_prompt or DEFAULT_SUMMARIZE_INSTRUCTIONS` (for display)
-   - `translate_value`: `config.translate_prompt or DEFAULT_TRANSLATE_INSTRUCTIONS` (for display)
+   - `summarize_value`: `config.summarize_prompt if config.summarize_prompt is not None else DEFAULT_SUMMARIZE_INSTRUCTIONS` (for display)
+   - `translate_value`: `config.translate_prompt if config.translate_prompt is not None else DEFAULT_TRANSLATE_INSTRUCTIONS` (for display)
    - `summarize_is_default`: `config.summarize_prompt is None`
    - `translate_is_default`: `config.translate_prompt is None`
    - `summarize_fixed_suffix`: `SUMMARIZE_FIXED_SUFFIX` (rendered read-only below textarea)
@@ -130,8 +130,9 @@ Form fields:
 Logic:
 
 ```python
-field = (await request.form()).get("field")   # "summarize" | "translate"
-action = (await request.form()).get("action") # "save" | "reset"
+field = (await request.form()).get("field")    # "summarize" | "translate"
+action = (await request.form()).get("action")  # "save" | "reset"
+form_data = await request.form()
 
 async with AsyncSessionLocal() as db:
     config = await get_system_config(db)
@@ -140,27 +141,28 @@ async with AsyncSessionLocal() as db:
             setattr(config, col_map[field], None)
             flash = f"{label_map[field]} reset to default."
         else:  # save
-            value = form_data.get(value_field_map[field], "").strip() or None
-            if value and len(value) > MAX_PROMPT_LENGTH:
-                raise ValueError(f"Instructions too long (max {MAX_PROMPT_LENGTH} characters).")
+            value = form_data.get("instructions", "").strip() or None
+            max_len = MAX_PROMPT_LENGTHS[field]
+            if value and len(value) > max_len:
+                raise ValueError(f"Instructions too long (max {max_len} characters).")
             setattr(config, col_map[field], value)
             flash = f"{label_map[field]} saved." if value else f"{label_map[field]} reset to default."
         await db.commit()
     except Exception as e:
         await db.rollback()
         flash = f"Error: {e}"
-await request.session["flash"] = flash
+request.session["flash"] = flash
 return RedirectResponse(url=request.url_for("admin:ai_prompts_page"), status_code=303)
 ```
 
 Where:
 - `col_map = {"summarize": "summarize_prompt", "translate": "translate_prompt"}`
 - `label_map = {"summarize": "Summarization instructions", "translate": "Translation instructions"}`
-- `MAX_PROMPT_LENGTH = 4000`
+- `MAX_PROMPT_LENGTHS = {"summarize": 4000, "translate": 500}`
 
 ### Validation
 
-- Max length: 4000 chars for summarize, 500 chars for translate.
+- Max length: 4000 chars for summarize instructions, 500 chars for translate instructions (`MAX_PROMPT_LENGTHS` dict).
 - Normalize empty/whitespace → `None` on save.
 - Unknown `field` or `action` values: log warning, flash error, redirect.
 
