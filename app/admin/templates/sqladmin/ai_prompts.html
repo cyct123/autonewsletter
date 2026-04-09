@@ -1,0 +1,89 @@
+{% extends "sqladmin/layout.html" %}
+
+{% block content_header %}
+<div class="container-xl">
+  <div class="page-header">
+    <div class="row align-items-center">
+      <div class="col-auto">
+        <h2 class="page-title">AI Prompts</h2>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-xl">
+  <div class="row row-cards">
+    <div class="col-12 col-md-8">
+
+      {% if flash %}
+      <div class="alert {% if 'Error' in flash %}alert-danger{% else %}alert-success{% endif %} mb-3" role="alert">
+        {{ flash }}
+      </div>
+      {% endif %}
+
+      {# Translation Instructions — appears above Summarization #}
+      <div class="card mb-4">
+        <div class="card-body">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <h3 class="card-title mb-0">Translation Instructions</h3>
+            {% if translate_is_default %}
+            <span class="badge bg-secondary">Using app default</span>
+            {% else %}
+            <span class="badge bg-primary">Custom override</span>
+            {% endif %}
+          </div>
+          <p class="text-muted mb-3">Controls how English titles are translated to Chinese.</p>
+          <form method="POST">
+            <input type="hidden" name="field" value="translate">
+            <div class="mb-2">
+              <textarea class="form-control font-monospace" name="instructions" rows="3"
+                        style="resize: vertical;">{{ translate_value }}</textarea>
+            </div>
+            <div class="border border-dashed rounded-bottom p-2 mb-3 small text-muted font-monospace"
+                 style="background:#f8f9fa;border-top:none!important">
+              <span class="text-secondary">[ always appended → ]</span> {{ translate_fixed_append }}
+            </div>
+            <div class="d-flex gap-2">
+              <button type="submit" name="action" value="save" class="btn btn-primary btn-sm">Save</button>
+              <button type="submit" name="action" value="reset" class="btn btn-secondary btn-sm">↺ Reset to Default</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {# Summarization Instructions #}
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <h3 class="card-title mb-0">Summarization Instructions</h3>
+            {% if summarize_is_default %}
+            <span class="badge bg-secondary">Using app default</span>
+            {% else %}
+            <span class="badge bg-primary">Custom override</span>
+            {% endif %}
+          </div>
+          <p class="text-muted mb-3">Controls the numbered rules sent to the AI for generating Chinese summaries. The JSON output schema is always appended automatically.</p>
+          <form method="POST">
+            <input type="hidden" name="field" value="summarize">
+            <div class="mb-2">
+              <textarea class="form-control font-monospace" name="instructions" rows="8"
+                        style="resize: vertical;">{{ summarize_value }}</textarea>
+            </div>
+            <div class="border border-dashed rounded-bottom p-2 mb-3 small text-muted font-monospace"
+                 style="background:#f8f9fa;border-top:none!important">
+              <span class="text-secondary">[ always appended → ]</span> {{ summarize_fixed_suffix }}
+            </div>
+            <div class="d-flex gap-2">
+              <button type="submit" name="action" value="save" class="btn btn-primary btn-sm">Save</button>
+              <button type="submit" name="action" value="reset" class="btn btn-secondary btn-sm">↺ Reset to Default</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

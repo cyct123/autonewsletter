@@ -22,6 +22,7 @@ from app.admin.views.content import ContentAdmin
 from app.admin.views.send_log import SendLogAdmin
 from app.admin.views.system_config import SystemConfigAdmin
 from app.admin.views.trigger import TriggerAdmin
+from app.admin.views.ai_prompts import AIPromptsAdmin
 
 
 class TriggerAuthMiddleware(BaseHTTPMiddleware):
@@ -110,6 +111,7 @@ admin.add_view(ContentAdmin)
 admin.add_view(SendLogAdmin)
 admin.add_view(SystemConfigAdmin)
 admin.add_view(TriggerAdmin)
+admin.add_view(AIPromptsAdmin)
 
 
 @app.get("/health")
