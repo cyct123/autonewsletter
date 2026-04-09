@@ -58,6 +58,7 @@ class AIPromptsAdmin(BaseView):
                     await db.commit()
                 except Exception as e:
                     await db.rollback()
+                    logger.exception("ai_prompts_save_error", field=field, action=action)
                     flash = f"Error: {e}"
 
             request.session["flash"] = flash

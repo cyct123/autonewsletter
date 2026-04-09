@@ -19,7 +19,7 @@
 
       {% if flash %}
       <div class="alert {% if 'Error' in flash %}alert-danger{% else %}alert-success{% endif %} mb-3" role="alert">
-        {{ flash }}
+        {{ flash | e }}
       </div>
       {% endif %}
 
