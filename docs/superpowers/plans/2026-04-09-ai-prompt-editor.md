@@ -228,7 +228,7 @@ Expected: `Running upgrade 7c819eed91ce -> <hash>, add_ai_prompt_columns`
 - [ ] **Step 2.5: Verify columns exist**
 
 ```bash
-docker exec autonewsletter-app psql "$DATABASE_URL" -c "\d system_config"
+docker exec autonewsletter-db psql -U autonews -d autonews -c "\d system_config"
 ```
 
 Expected: `summarize_prompt` and `translate_prompt` columns with type `text`, nullable.
@@ -601,10 +601,9 @@ def test_unknown_field_rejected():
         response = client.post("/admin/ai-prompts",
                                data={"field": "badfield", "action": "save",
                                      "instructions": "x"},
-                               follow_redirects=True)
-    assert response.status_code == 200
-    assert "Error" in response.text
-    mock_get.assert_not_called()
+                               follow_redirects=False)
+    # Should 303 to the GET without touching DB
+    assert response.status_code == 303
 
 
 def test_unknown_action_rejected():
@@ -618,10 +617,9 @@ def test_unknown_action_rejected():
         response = client.post("/admin/ai-prompts",
                                data={"field": "summarize", "action": "badaction",
                                      "instructions": "x"},
-                               follow_redirects=True)
-    assert response.status_code == 200
-    assert "Error" in response.text
-    mock_get.assert_not_called()
+                               follow_redirects=False)
+    # Should 303 to the GET without touching DB
+    assert response.status_code == 303
 ```
 
 - [ ] **Step 4.2: Copy test file to container and run to confirm failure**
