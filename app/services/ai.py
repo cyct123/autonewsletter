@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from openai import AsyncOpenAI
 from app.config import settings
 from app.repositories.system_config import get_system_config
+from app.services.ai_prompts import build_summarize_prompt, build_translate_prompt
 from app.utils.logger import logger
 
 
@@ -31,17 +32,10 @@ async def summarize(text: str, db: AsyncSession) -> dict:
             "qualityScore": 0,
         }
 
-    logger.info("summarize_called", text_length=len(text))
+    logger.info("summarize_called", text_length=len(text), using_custom_prompt=config.summarize_prompt is not None)
     client = AsyncOpenAI(api_key=api_key, base_url=base_url)
 
-    prompt = """你是中文资讯编辑，按以下标准生成中文内容:
-1) 用中文输出;
-2) 生成3-6句高信息密度的正文，覆盖"发生了什么+背景+影响/所以怎样(so what)";
-3) 至少标记两句为关键判断(boldIndices)，其中一条必须是"so what";
-4) 同时提取3个关键要点;
-5) 给出0-1之间的质量分数;
-结果以以下JSON格式返回: { "sentences": string[], "boldIndices": number[], "keyPoints": string[], "qualityScore": number }
-原文内容: """ + text[:6000]
+    prompt = build_summarize_prompt(config.summarize_prompt, text)
 
     logger.info("ai_request_starting", model=model, prompt_length=len(prompt))
 
@@ -113,10 +107,10 @@ async def translate_title(title: str, db: AsyncSession) -> str:
         return title
 
     client = AsyncOpenAI(api_key=api_key, base_url=base_url)
-    prompt = f"将以下标题精准翻译为中文标题，保持简洁凝练: {title[:200]}"
+    prompt = build_translate_prompt(config.translate_prompt, title)
 
     try:
-        logger.info("translation_request_starting", model=model)
+        logger.info("translation_request_starting", model=model, using_custom_prompt=config.translate_prompt is not None)
         response = await client.chat.completions.create(
             model=model,
             messages=[{"role": "user", "content": prompt}],
