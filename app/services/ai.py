@@ -84,13 +84,12 @@ async def translate_title(title: str, db: AsyncSession) -> str:
     ascii_count = sum(1 for c in title if ord(c) < 128)
     ascii_ratio = ascii_count / max(len(title), 1)
 
-    logger.info("translate_title_called", title=title[:100], ascii_ratio=ascii_ratio)
+    config = await get_system_config(db)
+    logger.info("translate_title_called", title=title[:100], ascii_ratio=ascii_ratio, using_custom_prompt=config.translate_prompt is not None)
 
     if ascii_ratio < 0.6:
         logger.info("translation_skipped", reason="already_chinese", ascii_ratio=ascii_ratio)
         return title
-
-    config = await get_system_config(db)
 
     if config.ai_model == "openai" and settings.openai_api_key:
         api_key = settings.openai_api_key
@@ -110,7 +109,7 @@ async def translate_title(title: str, db: AsyncSession) -> str:
     prompt = build_translate_prompt(config.translate_prompt, title)
 
     try:
-        logger.info("translation_request_starting", model=model, using_custom_prompt=config.translate_prompt is not None)
+        logger.info("translation_request_starting", model=model)
         response = await client.chat.completions.create(
             model=model,
             messages=[{"role": "user", "content": prompt}],
