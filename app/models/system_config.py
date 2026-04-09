@@ -1,5 +1,5 @@
 # app/models/system_config.py
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, Text
 from app.database import Base
 
 
@@ -11,3 +11,5 @@ class SystemConfig(Base):
     ai_model = Column(String, nullable=False, default="deepseek")
     default_max_items_per_run = Column(Integer, nullable=False, default=5)
     force_recent = Column(Boolean, nullable=False, default=False)
+    summarize_prompt = Column(Text, nullable=True)
+    translate_prompt = Column(Text, nullable=True)
