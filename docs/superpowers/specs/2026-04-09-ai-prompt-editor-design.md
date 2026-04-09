@@ -31,7 +31,7 @@ translate_prompt = Column(Text, nullable=True)   # NULL = use app default
 
 - Both columns are nullable. `NULL` means "follow the current hardcoded default." A non-null value is a stored custom override.
 - `get_or_create_system_config()` leaves both as `NULL` — no backfill needed.
-- An Alembic migration adds the two columns with `server_default=None`.
+- No `server_default` needed — columns are nullable with Python default `None`.
 
 ### Read semantics
 
@@ -118,8 +118,11 @@ async def ai_prompts_page(self, request): ...
    - `translate_value`: `config.translate_prompt if config.translate_prompt is not None else DEFAULT_TRANSLATE_INSTRUCTIONS` (for display)
    - `summarize_is_default`: `config.summarize_prompt is None`
    - `translate_is_default`: `config.translate_prompt is None`
-   - `summarize_fixed_suffix`: `SUMMARIZE_FIXED_SUFFIX` (rendered read-only below textarea)
+   - `summarize_fixed_suffix`: `SUMMARIZE_FIXED_SUFFIX` (rendered read-only below summarize textarea)
+   - `translate_fixed_append`: `"标题: [title text]"` (rendered read-only below translate textarea)
    - `flash`: popped from `request.session`
+
+**Note on pre-filling:** GET pre-fills both textareas with the effective text (default or custom). If the admin clicks Save without editing, they will convert `NULL` (follow app default) into a stored snapshot of that default. This is intentional — the badge clearly shows "Using app default" before save, making the distinction visible.
 
 ### POST
 
@@ -130,9 +133,15 @@ Form fields:
 Logic:
 
 ```python
-field = (await request.form()).get("field")    # "summarize" | "translate"
-action = (await request.form()).get("action")  # "save" | "reset"
 form_data = await request.form()
+field = form_data.get("field")    # "summarize" | "translate"
+action = form_data.get("action")  # "save" | "reset"
+
+# Validate field and action before touching DB
+if field not in col_map or action not in ("save", "reset"):
+    logger.warning("ai_prompts_invalid_post", field=field, action=action)
+    request.session["flash"] = "Error: invalid request."
+    return RedirectResponse(url=request.url_for("admin:ai_prompts_page"), status_code=303)
 
 async with AsyncSessionLocal() as db:
     config = await get_system_config(db)
@@ -215,13 +224,31 @@ from app.admin.views.ai_prompts import AIPromptsAdmin
 
 ## Alembic Migration
 
+Generate with `alembic revision --autogenerate -m "add_ai_prompt_columns"`. The resulting file goes in `alembic/versions/` and follows the project's existing migration format:
+
 ```python
-# migrations/versions/XXXX_add_ai_prompt_columns.py
-def upgrade():
+"""add_ai_prompt_columns
+
+Revision ID: <auto>
+Revises: <current head>
+Create Date: <auto>
+
+"""
+from alembic import op
+import sqlalchemy as sa
+
+revision = '<auto>'
+down_revision = '<current head>'
+branch_labels = None
+depends_on = None
+
+
+def upgrade() -> None:
     op.add_column("system_config", sa.Column("summarize_prompt", sa.Text(), nullable=True))
     op.add_column("system_config", sa.Column("translate_prompt", sa.Text(), nullable=True))
 
-def downgrade():
+
+def downgrade() -> None:
     op.drop_column("system_config", "translate_prompt")
     op.drop_column("system_config", "summarize_prompt")
 ```
@@ -233,6 +260,7 @@ def downgrade():
 | Test | What it covers |
 |------|---------------|
 | `test_ai_prompts_page_requires_login` | GET redirects to login when unauthenticated |
+| `test_ai_prompts_post_requires_login` | POST redirects to login when unauthenticated |
 | `test_ai_prompts_get_shows_defaults` | GET renders both sections with "Using app default" badge when columns are NULL |
 | `test_ai_prompts_get_shows_custom` | GET renders "Custom override" badge when columns are non-NULL |
 | `test_save_summarize_instructions` | POST field=summarize action=save writes value, flash confirms |
@@ -240,10 +268,12 @@ def downgrade():
 | `test_reset_summarize` | POST field=summarize action=reset writes None, flash confirms |
 | `test_reset_translate` | POST field=translate action=reset writes None, flash confirms |
 | `test_empty_save_normalizes_to_none` | POST with empty/whitespace value writes None |
-| `test_save_too_long_rejected` | POST with value > MAX_PROMPT_LENGTH returns error flash |
-| `test_build_summarize_prompt_default` | `build_summarize_prompt(None, text)` uses default and appends fixed suffix |
+| `test_save_too_long_rejected` | POST with value > MAX_PROMPT_LENGTHS limit returns error flash |
+| `test_unknown_field_rejected` | POST with unknown field= value returns error flash without touching DB |
+| `test_unknown_action_rejected` | POST with unknown action= value returns error flash without touching DB |
+| `test_build_summarize_prompt_default` | `build_summarize_prompt(None, text)` uses default, appends fixed suffix, truncates text at 6000 chars |
 | `test_build_summarize_prompt_custom` | `build_summarize_prompt(custom, text)` uses custom and appends fixed suffix |
-| `test_build_translate_prompt_default` | `build_translate_prompt(None, title)` uses default and appends title |
+| `test_build_translate_prompt_default` | `build_translate_prompt(None, title)` uses default, appends `\n标题:`, truncates title at 200 chars |
 | `test_build_translate_prompt_custom` | `build_translate_prompt(custom, title)` uses custom and appends title |
 
 ---
