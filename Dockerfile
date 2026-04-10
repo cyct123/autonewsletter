@@ -21,9 +21,13 @@ RUN pip install --no-cache-dir -r requirements.txt -i https://mirrors.aliyun.com
 COPY app ./app
 COPY alembic ./alembic
 COPY alembic.ini .
+COPY docker-entrypoint.sh .
 
 # Expose port
 EXPOSE 8000
+
+# Set entrypoint to run migrations before starting app
+ENTRYPOINT ["./docker-entrypoint.sh"]
 
 # Start command
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
