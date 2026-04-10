@@ -27,6 +27,9 @@ All command examples in documentation use Bash syntax and can be run directly in
 ./conda-setup.sh
 conda activate autonewsletter
 
+# IMPORTANT: Run database migrations before starting the app
+alembic upgrade head
+
 # Development mode with hot reload
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
@@ -46,6 +49,9 @@ conda deactivate
 # Install dependencies
 pip install -r requirements.txt
 
+# IMPORTANT: Run database migrations before starting the app
+alembic upgrade head
+
 # Development mode
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -60,6 +66,11 @@ IMMEDIATE_RUN=1 uvicorn app.main:app
 alembic upgrade head
 alembic revision --autogenerate -m "description"
 ```
+
+**Note on Migrations:**
+- **Docker deployment:** Migrations run automatically via `docker-entrypoint.sh` before app startup
+- **Local development:** You must run `alembic upgrade head` manually before starting uvicorn
+- Always run migrations after pulling new code that includes database schema changes
 
 ## Architecture
 
