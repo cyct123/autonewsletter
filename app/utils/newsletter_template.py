@@ -36,12 +36,12 @@ def build_newsletter_html(items: List[Dict]) -> str:
     </div>"""
         rows.append(row)
 
-    rows_html = "".join(rows) if rows else "<p>本周暂无内容</p>"
+    rows_html = "".join(rows) if rows else "<p>今日暂无内容</p>"
 
     return f"""
   <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#ffffff;color:#0f172a;">
     <div style="max-width:720px;margin:0 auto;padding:24px">
-      <h2 style="color:#1e3a8a;margin:0 0 16px 0;">每周智能内容简报</h2>
+      <h2 style="color:#1e3a8a;margin:0 0 16px 0;">每日智能内容简报</h2>
       {rows_html}
       <p style="margin-top:24px;font-size:12px;color:#94a3b8;">此邮件由系统自动发送</p>
     </div>

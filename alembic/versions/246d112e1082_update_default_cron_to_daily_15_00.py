@@ -4,6 +4,13 @@ Revision ID: 246d112e1082
 Revises: 51ef90c15388
 Create Date: 2026-04-11 22:24:04.942782
 
+IMPORTANT: This migration only changes the default for NEW installations.
+Existing deployments will keep their current schedule until manually updated.
+
+To update an existing deployment to the new daily 15:00 schedule:
+1. Via admin UI: Go to System Config page and change the cron expression
+2. Via SQL: UPDATE system_config SET weekly_cron = '0 15 * * *' WHERE id = 1;
+
 """
 from alembic import op
 import sqlalchemy as sa
