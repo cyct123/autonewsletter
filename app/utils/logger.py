@@ -44,9 +44,12 @@ def setup_logging() -> None:
     root_logger.addHandler(handler)
     root_logger.setLevel(_get_level())
 
-    logging.getLogger("apscheduler").setLevel(_get_level())
-    logging.getLogger("uvicorn.access").setLevel(_get_level())
-    logging.getLogger("uvicorn.error").setLevel(_get_level())
+    # Ensure uvicorn and apscheduler logs propagate to root
+    for logger_name in ["apscheduler", "uvicorn", "uvicorn.access", "uvicorn.error"]:
+        logger = logging.getLogger(logger_name)
+        logger.handlers.clear()
+        logger.setLevel(_get_level())
+        logger.propagate = True
 
 
 setup_logging()
