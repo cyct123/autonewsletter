@@ -5,7 +5,7 @@ from app.config import settings
 from app.utils.logger import logger
 
 
-async def send_email(to_address: str, content: str, title: str = "每周Newsletter") -> dict:
+async def send_email(to_address: str, content: str, title: str = "每日Newsletter") -> dict:
     """Send email via SMTP"""
     if not all([settings.smtp_host, settings.smtp_user, settings.smtp_pass]):
         logger.warning("email_not_configured")

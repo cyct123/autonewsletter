@@ -3,7 +3,7 @@ from app.config import settings
 from app.utils.logger import logger
 
 
-async def send_pushplus(content: str, title: str = "每周Newsletter") -> dict:
+async def send_pushplus(content: str, title: str = "每日Newsletter") -> dict:
     """Send notification via PushPlus"""
     tokens = [t.strip() for t in settings.pushplus_tokens.split(",") if t.strip()]
 

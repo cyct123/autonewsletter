@@ -3,7 +3,7 @@ from app.config import settings
 from app.utils.logger import logger
 
 
-async def send_lark(content: str, title: str = "每周Newsletter") -> dict:
+async def send_lark(content: str, title: str = "每日Newsletter") -> dict:
     """Send notification via Lark (Feishu) webhook"""
     url = settings.lark_webhook_url
     if not url:

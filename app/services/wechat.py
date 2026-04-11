@@ -3,7 +3,7 @@ from app.config import settings
 from app.utils.logger import logger
 
 
-async def send_wechat(content: str, title: str = "每周Newsletter") -> dict:
+async def send_wechat(content: str, title: str = "每日Newsletter") -> dict:
     """Send notification via WeChat webhook"""
     webhooks = [w.strip() for w in settings.wechat_webhook_urls.split(",") if w.strip()]
 
