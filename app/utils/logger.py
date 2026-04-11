@@ -30,12 +30,16 @@ def setup_logging() -> None:
         cache_logger_on_first_use=True,
     )
 
-    # 接管 stdlib logging（APScheduler、uvicorn 等）
+    # Route stdlib logging (APScheduler, uvicorn) through structlog
+    handler = logging.StreamHandler()
+    handler.setFormatter(structlog.stdlib.ProcessorFormatter(
+        processor=renderer,
+        foreign_pre_chain=shared_processors,
+    ))
+
     logging.basicConfig(
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        datefmt="%Y-%m-%dT%H:%M:%S",
+        handlers=[handler],
         level=_get_level(),
-        handlers=[logging.StreamHandler()],
     )
     logging.getLogger("apscheduler").setLevel(_get_level())
     logging.getLogger("uvicorn.access").setLevel(_get_level())
