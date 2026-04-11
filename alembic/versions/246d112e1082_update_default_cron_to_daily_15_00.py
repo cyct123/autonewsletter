@@ -30,5 +30,5 @@ def downgrade() -> None:
     op.alter_column('system_config', 'weekly_cron',
                     server_default='0 9 * * 3')
 
-    # Restore existing rows
-    op.execute("UPDATE system_config SET weekly_cron = '0 9 * * 3' WHERE weekly_cron = '0 15 * * *'")
+    # Note: We don't restore existing row values on downgrade to avoid
+    # overwriting intentional user changes. Only the column default is reverted.
