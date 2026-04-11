@@ -32,7 +32,8 @@ def setup_logging() -> None:
 
     # 接管 stdlib logging（APScheduler、uvicorn 等）
     logging.basicConfig(
-        format="%(message)s",
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%S",
         level=_get_level(),
         handlers=[logging.StreamHandler()],
     )
