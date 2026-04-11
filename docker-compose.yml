@@ -20,7 +20,7 @@ services:
       - SMTP_PORT=${SMTP_PORT:-465}
       - SMTP_USER=${SMTP_USER:-}
       - SMTP_PASS=${SMTP_PASS:-}
-      - WEEKLY_CRON=${WEEKLY_CRON:-0 9 * * 3}
+      - WEEKLY_CRON=${WEEKLY_CRON:-0 15 * * *}
       - IMMEDIATE_RUN=${IMMEDIATE_RUN:-0}
       - FORCE_RECENT=${FORCE_RECENT:-0}
       - LOG_LEVEL=${LOG_LEVEL:-info}

@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     whisper_timeout: int = 300
 
     # Scheduling
-    weekly_cron: str = "0 9 * * 3"
+    weekly_cron: str = "0 15 * * *"
     immediate_run: bool = False
     force_recent: bool = False
 

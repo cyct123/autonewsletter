@@ -164,8 +164,9 @@ def setup_scheduler(weekly_cron: str) -> AsyncIOScheduler:
     """Configure APScheduler for weekly newsletter.
     weekly_cron is read from system_config at startup — not from settings directly.
     """
-    scheduler = AsyncIOScheduler()
-    trigger = CronTrigger.from_crontab(weekly_cron)
+    from zoneinfo import ZoneInfo
+    scheduler = AsyncIOScheduler(timezone=ZoneInfo("Asia/Shanghai"))
+    trigger = CronTrigger.from_crontab(weekly_cron, timezone=ZoneInfo("Asia/Shanghai"))
     scheduler.add_job(
         run_weekly_newsletter,
         trigger,

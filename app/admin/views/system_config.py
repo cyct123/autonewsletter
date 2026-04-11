@@ -47,7 +47,8 @@ class SystemConfigAdmin(ModelView, model=SystemConfig):
             return
         new_cron = data["weekly_cron"]
         try:
-            trigger = CronTrigger.from_crontab(new_cron)
+            from zoneinfo import ZoneInfo
+            trigger = CronTrigger.from_crontab(new_cron, timezone=ZoneInfo("Asia/Shanghai"))
             scheduler.reschedule_job("weekly_newsletter", trigger=trigger)
             logger.info("scheduler_reloaded", weekly_cron=new_cron)
         except Exception as e:
