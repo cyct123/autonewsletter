@@ -76,7 +76,7 @@ alembic revision --autogenerate -m "description"
 
 ### Core Pipeline Flow
 
-The system runs on APScheduler with cron schedule (default: Wednesdays at 9 AM).
+The system runs on APScheduler with cron schedule (default: daily at 3 PM Beijing time).
 
 **Pipeline stages** (in `app/jobs/weekly_newsletter.py`):
 
@@ -144,7 +144,7 @@ Required:
 Optional:
 - `REDIS_URL`: Redis connection string (default: redis://localhost:6379)
 - `RSS_FEEDS`: Comma-separated RSS feed URLs
-- `WEEKLY_CRON`: Cron expression (default: `0 9 * * 3`)
+- `WEEKLY_CRON`: Cron expression (default: `0 15 * * *` = daily at 3 PM Beijing time)
 - `IMMEDIATE_RUN`: Set to `1` to run immediately on startup
 - `FORCE_RECENT`: Set to `1` to bypass URL deduplication
 - `PG_POOL_SIZE`: PostgreSQL connection pool size (default: 10)

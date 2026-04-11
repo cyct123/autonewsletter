@@ -97,7 +97,7 @@ docker-compose down
 
 - `REDIS_URL`: Redis 连接字符串（默认：`redis://localhost:6379`）
 - `RSS_FEEDS`: RSS 源列表（逗号分隔）
-- `WEEKLY_CRON`: 定时任务表达式（默认：`0 9 * * 3` = 每周三 9:00）
+- `WEEKLY_CRON`: 定时任务表达式（默认：`0 15 * * *` = 每天 15:00）
 - `IMMEDIATE_RUN`: 启动时立即运行（`1` 启用，`0` 禁用）
 - `FORCE_RECENT`: 强制处理最近内容，跳过去重（`1` 启用）
 - `LOG_LEVEL`: 日志级别（`debug`/`info`/`warning`/`error`）
