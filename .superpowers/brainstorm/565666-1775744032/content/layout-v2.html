@@ -1,0 +1,57 @@
+<h2>AI Prompts Page — Layout v2</h2>
+<p class="subtitle">Translation Instructions moved above Summarization Instructions</p>
+
+<div class="mockup">
+  <div class="mockup-header">http://localhost:8000/admin/ai-prompts</div>
+  <div class="mockup-body">
+
+    <!-- Flash -->
+    <div style="background:#d1e7dd;border:1px solid #a3cfbb;border-radius:4px;padding:8px 12px;font-size:12px;color:#0a3622;margin-bottom:16px">
+      ✓ Translation instructions saved.
+    </div>
+
+    <!-- Translate section -->
+    <div style="background:#fff;border:1px solid #dee2e6;border-radius:6px;padding:16px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;color:#333">Translation Instructions</div>
+        <span style="font-size:10px;padding:2px 8px;background:#cfe2ff;color:#0a58ca;border-radius:10px">Custom override</span>
+      </div>
+      <div style="font-size:11px;color:#888;margin-bottom:6px">Edit the instruction below. The system will always append the title to translate.</div>
+      <div style="border:1px solid #ced4da;border-radius:4px;padding:8px;font-size:11px;font-family:monospace;background:#fdfdfe;min-height:36px;color:#333">
+        将以下标题精准翻译为中文标题，保持简洁凝练
+      </div>
+      <div style="border:1px dashed #ced4da;border-top:none;border-radius:0 0 4px 4px;padding:6px 8px;font-size:10px;font-family:monospace;background:#f8f9fa;color:#888">
+        <span style="color:#aaa">[ always appended → ]</span> 标题: [title text]
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="mock-button" style="font-size:11px;padding:4px 14px;background:#206bc4;color:#fff;border:none">Save</button>
+        <button class="mock-button" style="font-size:11px;padding:4px 14px;background:#e9ecef;color:#555;border:none">↺ Reset to Default</button>
+      </div>
+    </div>
+
+    <!-- Summarize section -->
+    <div style="background:#fff;border:1px solid #dee2e6;border-radius:6px;padding:16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;color:#333">Summarization Instructions</div>
+        <span style="font-size:10px;padding:2px 8px;background:#e9ecef;color:#555;border-radius:10px">Using app default</span>
+      </div>
+      <div style="font-size:11px;color:#888;margin-bottom:6px">Edit the instruction block below. The system will always append the JSON output contract.</div>
+      <div style="border:1px solid #ced4da;border-radius:4px;padding:8px;font-size:11px;font-family:monospace;background:#fdfdfe;min-height:80px;color:#333">
+        1) 用中文输出;<br>
+        2) 生成3-6句高信息密度的正文，覆盖"发生了什么+背景+影响/所以怎样(so what)";<br>
+        3) 至少标记两句为关键判断(boldIndices)，其中一条必须是"so what";<br>
+        4) 同时提取3个关键要点;<br>
+        5) 给出0-1之间的质量分数;
+      </div>
+      <div style="border:1px dashed #ced4da;border-top:none;border-radius:0 0 4px 4px;padding:6px 8px;font-size:10px;font-family:monospace;background:#f8f9fa;color:#888">
+        <span style="color:#aaa">[ always appended → ]</span> 结果以以下JSON格式返回: &#123; "sentences": string[], "boldIndices": number[], "keyPoints": string[], "qualityScore": number &#125;<br>
+        原文内容: [article text]
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="mock-button" style="font-size:11px;padding:4px 14px;background:#206bc4;color:#fff;border:none">Save</button>
+        <button class="mock-button" style="font-size:11px;padding:4px 14px;background:#e9ecef;color:#555;border:none">↺ Reset to Default</button>
+      </div>
+    </div>
+
+  </div>
+</div>

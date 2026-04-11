@@ -1,0 +1,68 @@
+<h2>认证与配置分层设计</h2>
+<p class="subtitle">HTTP Basic Auth 保护所有管理入口，配置按性质分层存储</p>
+
+<div class="section">
+  <h3>认证方案</h3>
+  <div class="mockup">
+    <div class="mockup-header">HTTP Basic Auth 覆盖范围</div>
+    <div class="mockup-body" style="font-family:monospace;font-size:13px;line-height:1.8">
+      <div style="color:#dc3545">❌ 改造前（无保护）</div>
+      <div>GET  /admin/*  → 直接访问</div>
+      <div>POST /trigger  → 直接访问</div>
+      <br>
+      <div style="color:#28a745">✅ 改造后（Basic Auth）</div>
+      <div>GET  /admin/*  → 需要用户名+密码</div>
+      <div>POST /trigger  → 需要用户名+密码</div>
+      <br>
+      <div style="color:#6c757d">配置（写入 .env）</div>
+      <div>ADMIN_USER=admin</div>
+      <div>ADMIN_PASS=your_password</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>配置分层</h3>
+  <div class="split">
+    <div class="mockup">
+      <div class="mockup-header">留在 .env（基础设施/密钥）</div>
+      <div class="mockup-body" style="font-size:13px;line-height:1.8">
+        <div>DATABASE_URL</div>
+        <div>REDIS_URL</div>
+        <div>DEEPSEEK_API_KEY</div>
+        <div>OPENAI_API_KEY</div>
+        <div>SMTP_PASS</div>
+        <div>ADMIN_USER / ADMIN_PASS</div>
+        <div style="color:#6c757d;font-size:12px;margin-top:8px">重启才能更改，不暴露给后台</div>
+      </div>
+    </div>
+    <div class="mockup">
+      <div class="mockup-header">迁移到数据库（运营配置）</div>
+      <div class="mockup-body" style="font-size:13px;line-height:1.8">
+        <div>weekly_cron</div>
+        <div>max_items_per_run（默认值）</div>
+        <div>force_recent</div>
+        <div>log_level</div>
+        <div>ai_model（deepseek/openai）</div>
+        <div style="color:#6c757d;font-size:12px;margin-top:8px">后台实时修改，无需重启</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>app_config 表结构（强类型字段，非万能 key-value）</h3>
+  <div class="mockup">
+    <div class="mockup-header">system_config 表</div>
+    <div class="mockup-body" style="font-family:monospace;font-size:13px;line-height:1.8">
+      <div>weekly_cron &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String &nbsp; "0 9 * * 3"</div>
+      <div>ai_model &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String &nbsp; "deepseek" | "openai"</div>
+      <div>max_items &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Integer  5</div>
+      <div>force_recent &nbsp;&nbsp;&nbsp; Boolean  False</div>
+      <div>log_level &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String &nbsp; "info"</div>
+      <div style="color:#6c757d;font-size:12px;margin-top:8px">单行表（id=1），后台渲染为设置页而非列表</div>
+    </div>
+  </div>
+</div>
+
+<p style="margin-top:16px;color:#6c757d;font-size:13px">这部分设计合理吗？</p>

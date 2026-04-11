@@ -1,0 +1,57 @@
+<h2>模型关系补全 + Scheduler 重载</h2>
+<p class="subtitle">补全 ForeignKey / relationship，以及配置变更后的调度刷新机制</p>
+
+<div class="section">
+  <h3>模型关系补全</h3>
+  <div class="mockup">
+    <div class="mockup-header">需要改动的模型</div>
+    <div class="mockup-body" style="font-family:monospace;font-size:13px;line-height:1.8">
+      <div style="color:#6c757d"># app/models/content.py</div>
+      <div>source_id = Column(UUID, <span style="color:#28a745">ForeignKey("sources.id")</span>)</div>
+      <div>source &nbsp;&nbsp;= <span style="color:#28a745">relationship("Source", back_populates="contents")</span></div>
+      <br>
+      <div style="color:#6c757d"># app/models/source.py</div>
+      <div>contents = <span style="color:#28a745">relationship("Content", back_populates="source")</span></div>
+      <br>
+      <div style="color:#6c757d"># app/models/send_log.py</div>
+      <div>subscriber_id = Column(UUID, <span style="color:#28a745">ForeignKey("subscribers.id")</span>)</div>
+      <div>subscriber &nbsp;&nbsp;= <span style="color:#28a745">relationship("Subscriber", back_populates="send_logs")</span></div>
+      <br>
+      <div style="color:#6c757d"># app/models/subscriber.py</div>
+      <div>send_logs = <span style="color:#28a745">relationship("SendLog", back_populates="subscriber")</span></div>
+      <br>
+      <div style="color:#ffc107">⚠ 需要新增 Alembic 迁移</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Scheduler 重载机制</h3>
+  <div class="mockup">
+    <div class="mockup-header">保存 weekly_cron 后的执行流程</div>
+    <div class="mockup-body" style="font-size:13px;line-height:1.8">
+      <div>1. 后台提交新 cron 表达式</div>
+      <div>2. 写入 system_config 表</div>
+      <div>3. 调用 <code>scheduler.reschedule_job("weekly_newsletter", trigger=CronTrigger.from_crontab(new_cron))</code></div>
+      <div>4. 返回成功，新调度立即生效</div>
+      <br>
+      <div style="color:#6c757d">scheduler 实例通过 app.state.scheduler 传递</div>
+      <div style="color:#6c757d">在 app/admin/views/system_config.py 的 after_model_change 钩子中执行</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>RSS_FEEDS 初始化导入</h3>
+  <div class="mockup">
+    <div class="mockup-header">启动时执行一次</div>
+    <div class="mockup-body" style="font-size:13px;line-height:1.8">
+      <div>1. 检查 sources 表是否为空</div>
+      <div>2. 若为空且 RSS_FEEDS 非空，则批量导入</div>
+      <div>3. 之后 RSS_FEEDS 不再作为运行时 fallback</div>
+      <div style="color:#6c757d;font-size:12px;margin-top:8px">在 app/main.py lifespan 中执行，位于 scheduler.start() 之前</div>
+    </div>
+  </div>
+</div>
+
+<p style="margin-top:16px;color:#6c757d;font-size:13px">这部分合理吗？确认后开始写完整设计文档</p>

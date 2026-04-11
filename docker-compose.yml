@@ -8,6 +8,7 @@ services:
       - redis
       - whisper
     environment:
+      - TZ=Asia/Shanghai
       - DATABASE_URL=postgresql+asyncpg://autonews:autonewsletter@db:5432/autonews
       - REDIS_URL=redis://redis:6379
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}

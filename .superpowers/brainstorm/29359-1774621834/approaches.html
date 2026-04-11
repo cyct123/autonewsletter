@@ -1,0 +1,40 @@
+<h2>管理后台实现方案</h2>
+<p class="subtitle">三种方案各有侧重，请选择最适合你的</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>SQLAdmin（推荐）</h3>
+      <p>基于 <strong>SQLAdmin</strong> 库，自动从 SQLAlchemy 模型生成表格式管理界面，挂载到 <code>/admin</code> 路径。配置存数据库，AI/定时任务配置新增 <code>app_config</code> 表动态读取。</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>优点</h4><ul><li>代码量极少，自动生成 CRUD</li><li>与现有 SQLAlchemy 模型无缝集成</li><li>支持自定义操作按钮（触发 pipeline）</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>界面样式固定，定制性有限</li><li>复杂查询需额外配置</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Starlette Admin</h3>
+      <p>功能更丰富的 Admin 框架，支持更灵活的自定义视图、表单验证和文件上传。配置存数据库，动态读取。</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>优点</h4><ul><li>功能更全面（批量操作、导出等）</li><li>UI 更现代（Bootstrap 5）</li><li>支持自定义页面</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>配置稍复杂</li><li>文档不如 SQLAdmin 完善</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>自定义 FastAPI + Jinja2</h3>
+      <p>纯手写后台，FastAPI 路由 + Jinja2 模板渲染 HTML 页面，完全控制每个页面的交互逻辑。</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>优点</h4><ul><li>完全定制，UI 随意设计</li><li>无额外依赖约束</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>开发量大（每个 CRUD 都要手写）</li><li>维护成本高</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>

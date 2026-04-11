@@ -1,0 +1,89 @@
+<h2>AI Prompts Page — Which Layout?</h2>
+<p class="subtitle">All three store prompts in SystemConfig and include Reset to Default. The difference is how you navigate and save.</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mock-nav" style="font-size:11px;padding:6px 12px">Admin › AI Prompts</div>
+      <div style="padding:12px;background:#f8f9fa">
+        <div style="font-size:11px;font-weight:600;margin-bottom:4px;color:#555">SUMMARIZATION PROMPT</div>
+        <div class="mock-input" style="height:56px;font-size:10px;display:flex;align-items:flex-start;padding:6px">你是中文资讯编辑，按以下标准生成中文内容...</div>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button class="mock-button" style="font-size:9px;padding:3px 8px;background:#e9ecef;color:#555;border:none">↺ Reset</button>
+        </div>
+        <div style="border-top:1px dashed #dee2e6;margin:10px 0"></div>
+        <div style="font-size:11px;font-weight:600;margin-bottom:4px;color:#555">TRANSLATION PROMPT</div>
+        <div class="mock-input" style="height:32px;font-size:10px;display:flex;align-items:flex-start;padding:6px">将以下标题精准翻译为中文标题...</div>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button class="mock-button" style="font-size:9px;padding:3px 8px;background:#e9ecef;color:#555;border:none">↺ Reset</button>
+        </div>
+        <div style="margin-top:10px;text-align:right">
+          <button class="mock-button" style="font-size:10px;padding:4px 14px;background:#206bc4;color:#fff;border:none">💾 Save All</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Single page, Save All</h3>
+      <p>Both prompts on one page, one submit saves everything. Reset per prompt.</p>
+      <div class="pros-cons" style="font-size:11px">
+        <div class="pros"><h4>Pros</h4><ul><li>Simple, one action</li><li>Easy to compare prompts side by side</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Must re-save both even when changing one</li></ul></div>
+      </div>
+      <p style="color:#206bc4;font-size:11px;font-weight:600">⭐ Recommended</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mock-nav" style="font-size:11px;padding:6px 12px">Admin › AI Prompts</div>
+      <div style="padding:12px;background:#f8f9fa">
+        <div style="font-size:11px;font-weight:600;margin-bottom:4px;color:#555">SUMMARIZATION PROMPT</div>
+        <div class="mock-input" style="height:56px;font-size:10px;display:flex;align-items:flex-start;padding:6px">你是中文资讯编辑，按以下标准生成中文内容...</div>
+        <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">
+          <button class="mock-button" style="font-size:9px;padding:3px 8px;background:#e9ecef;color:#555;border:none">↺ Reset</button>
+          <button class="mock-button" style="font-size:9px;padding:3px 8px;background:#206bc4;color:#fff;border:none">Save</button>
+        </div>
+        <div style="border-top:1px dashed #dee2e6;margin:10px 0"></div>
+        <div style="font-size:11px;font-weight:600;margin-bottom:4px;color:#555">TRANSLATION PROMPT</div>
+        <div class="mock-input" style="height:32px;font-size:10px;display:flex;align-items:flex-start;padding:6px">将以下标题精准翻译为中文标题...</div>
+        <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">
+          <button class="mock-button" style="font-size:9px;padding:3px 8px;background:#e9ecef;color:#555;border:none">↺ Reset</button>
+          <button class="mock-button" style="font-size:9px;padding:3px 8px;background:#206bc4;color:#fff;border:none">Save</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Single page, Save each</h3>
+      <p>Both prompts on one page, each with its own Save + Reset. Saves independently.</p>
+      <div class="pros-cons" style="font-size:11px">
+        <div class="pros"><h4>Pros</h4><ul><li>Surgical edits — save only what changed</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Two forms, more complex implementation</li><li>Flash messages need per-form identity</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mock-nav" style="font-size:11px;padding:6px 12px">Admin › AI Prompts</div>
+      <div style="padding:12px;background:#f8f9fa">
+        <div style="display:flex;gap:0;border-bottom:2px solid #206bc4;margin-bottom:10px">
+          <div style="padding:4px 12px;background:#206bc4;color:#fff;font-size:10px;font-weight:600">Summarization</div>
+          <div style="padding:4px 12px;background:#e9ecef;color:#555;font-size:10px">Translation</div>
+        </div>
+        <div class="mock-input" style="height:72px;font-size:10px;display:flex;align-items:flex-start;padding:6px">你是中文资讯编辑，按以下标准生成中文内容...</div>
+        <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end">
+          <button class="mock-button" style="font-size:9px;padding:3px 8px;background:#e9ecef;color:#555;border:none">↺ Reset</button>
+          <button class="mock-button" style="font-size:9px;padding:3px 8px;background:#206bc4;color:#fff;border:none">Save</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Tabbed page</h3>
+      <p>One tab per prompt. Larger textarea, focused editing. Switch tabs to change prompt.</p>
+      <div class="pros-cons" style="font-size:11px">
+        <div class="pros"><h4>Pros</h4><ul><li>More vertical space per prompt</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Can't see both at once</li><li>Needs JS for tab switching</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>

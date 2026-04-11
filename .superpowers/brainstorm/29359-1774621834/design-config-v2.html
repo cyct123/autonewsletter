@@ -1,0 +1,49 @@
+<h2>配置分层（修正版）</h2>
+<p class="subtitle">按"能否在运行时安全修改"划分，不按重要性划分</p>
+
+<div class="section">
+  <div class="split">
+    <div class="mockup">
+      <div class="mockup-header">留在 .env（基础设施/凭据）</div>
+      <div class="mockup-body" style="font-size:13px;line-height:1.8">
+        <div>DATABASE_URL</div>
+        <div>REDIS_URL</div>
+        <div>DEEPSEEK_API_KEY</div>
+        <div>OPENAI_API_KEY</div>
+        <div>SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS</div>
+        <div>LARK_WEBHOOK_URL</div>
+        <div>WECHAT_WEBHOOK_URLS</div>
+        <div>PUSHPLUS_TOKENS</div>
+        <div>WHISPER_URL</div>
+        <div>ADMIN_USER / ADMIN_PASS</div>
+        <div style="color:#6c757d;font-size:12px;margin-top:8px">改动需重启容器，不进后台</div>
+      </div>
+    </div>
+    <div class="mockup">
+      <div class="mockup-header">迁移到 system_config 表（运营配置）</div>
+      <div class="mockup-body" style="font-size:13px;line-height:1.8">
+        <div>weekly_cron &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String</div>
+        <div>ai_model &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String &nbsp;<span style="color:#6c757d">→ 需补"优先于 key"逻辑</span></div>
+        <div>default_max_items_per_run &nbsp;Integer</div>
+        <div>force_recent &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Boolean</div>
+        <div style="color:#6c757d;font-size:12px;margin-top:8px">log_level 暂留 .env（logger 导入时初始化）</div>
+        <div style="color:#6c757d;font-size:12px">weekly_cron 改后需触发 scheduler 重载</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>system_config 单行表策略</h3>
+  <div class="mockup">
+    <div class="mockup-header">约束规则</div>
+    <div class="mockup-body" style="font-size:13px;line-height:1.8">
+      <div>✅ 启动时 get_or_create 默认记录（id=1）</div>
+      <div>✅ 后台只允许编辑，禁止新增/删除</div>
+      <div>✅ 保存 weekly_cron 后自动触发 scheduler 重载</div>
+      <div>✅ ai_model 字段校验只允许 "deepseek" | "openai"</div>
+    </div>
+  </div>
+</div>
+
+<p style="margin-top:16px;color:#6c757d;font-size:13px">这部分合理吗？</p>

@@ -8,7 +8,12 @@ RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debia
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     postgresql-client \
+    tzdata \
     && rm -rf /var/lib/apt/lists/*
+
+# Set timezone to Asia/Shanghai (UTC+8)
+ENV TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Set working directory
 WORKDIR /app

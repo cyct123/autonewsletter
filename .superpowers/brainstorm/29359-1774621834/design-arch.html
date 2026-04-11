@@ -1,0 +1,43 @@
+<h2>管理后台架构设计</h2>
+<p class="subtitle">基于 SQLAdmin + FastAPI，挂载到 /admin 路径</p>
+
+<div class="section">
+  <h3>整体结构</h3>
+  <div class="mockup">
+    <div class="mockup-header">目录变更</div>
+    <div class="mockup-body" style="font-family:monospace;font-size:13px;line-height:1.8">
+      <div>app/</div>
+      <div>&nbsp;&nbsp;admin/</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;__init__.py</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;views/</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;source.py &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#6c757d">← 内容源管理</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;subscriber.py &nbsp;<span style="color:#6c757d">← 订阅者管理</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;content.py &nbsp;&nbsp;&nbsp;<span style="color:#6c757d">← 内容查看</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;send_log.py &nbsp;&nbsp;<span style="color:#6c757d">← 发送日志</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;app_config.py &nbsp;<span style="color:#6c757d">← AI/定时任务配置</span></div>
+      <div>&nbsp;&nbsp;models/</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;app_config.py &nbsp;<span style="color:#6c757d">← 新增：配置表模型</span></div>
+      <div>&nbsp;&nbsp;main.py &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#6c757d">← 挂载 admin</span></div>
+      <div>requirements.txt &nbsp;<span style="color:#6c757d">← 新增 sqladmin</span></div>
+      <div>alembic/versions/ &nbsp;<span style="color:#6c757d">← 新增 app_config 迁移</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>访问方式</h3>
+  <div class="mockup">
+    <div class="mockup-header">URL 路由</div>
+    <div class="mockup-body" style="font-family:monospace;font-size:13px;line-height:1.8">
+      <div><span style="color:#28a745">GET</span>  /admin &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← 管理后台首页</div>
+      <div><span style="color:#28a745">GET</span>  /admin/source &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← 内容源列表</div>
+      <div><span style="color:#28a745">GET</span>  /admin/subscriber &nbsp;← 订阅者列表</div>
+      <div><span style="color:#28a745">GET</span>  /admin/content &nbsp;&nbsp;&nbsp;&nbsp;← 内容列表</div>
+      <div><span style="color:#28a745">GET</span>  /admin/sendlog &nbsp;&nbsp;&nbsp;&nbsp;← 发送日志</div>
+      <div><span style="color:#28a745">GET</span>  /admin/appconfig &nbsp;&nbsp;← 系统配置</div>
+      <div><span style="color:#17a2b8">POST</span> /trigger &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← 手动触发（现有）</div>
+    </div>
+  </div>
+</div>
+
+<p style="margin-top:16px;color:#6c757d;font-size:13px">这部分设计看起来合理吗？</p>
