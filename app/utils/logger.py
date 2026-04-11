@@ -23,7 +23,9 @@ def setup_logging() -> None:
         renderer = structlog.processors.JSONRenderer()
 
     structlog.configure(
-        processors=shared_processors + [renderer],
+        processors=shared_processors + [
+            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+        ],
         wrapper_class=structlog.stdlib.BoundLogger,
         context_class=dict,
         logger_factory=structlog.stdlib.LoggerFactory(),
@@ -37,10 +39,11 @@ def setup_logging() -> None:
         foreign_pre_chain=shared_processors,
     ))
 
-    logging.basicConfig(
-        handlers=[handler],
-        level=_get_level(),
-    )
+    root_logger = logging.getLogger()
+    root_logger.handlers.clear()
+    root_logger.addHandler(handler)
+    root_logger.setLevel(_get_level())
+
     logging.getLogger("apscheduler").setLevel(_get_level())
     logging.getLogger("uvicorn.access").setLevel(_get_level())
     logging.getLogger("uvicorn.error").setLevel(_get_level())
