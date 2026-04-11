@@ -141,7 +141,7 @@ async def run_weekly_newsletter():
                 html = build_newsletter_html(chosen)
 
                 result = await distribute(
-                    {"title": "每周Newsletter", "html": html},
+                    {"title": "每日Newsletter", "html": html},
                     {"channel": sub["channelType"], "address": sub["identifier"]}
                 )
 

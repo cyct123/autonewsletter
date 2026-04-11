@@ -17,12 +17,12 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Change column default
+    # Change column default for new rows
     op.alter_column('system_config', 'weekly_cron',
                     server_default='0 15 * * *')
 
-    # Update existing rows that still have the old default
-    op.execute("UPDATE system_config SET weekly_cron = '0 15 * * *' WHERE weekly_cron = '0 9 * * 3'")
+    # Note: We don't update existing rows to preserve user's chosen schedule.
+    # Existing installations will keep their current cron expression.
 
 
 def downgrade() -> None:
